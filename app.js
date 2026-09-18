@@ -1,6 +1,24 @@
-/* Humanly — frontend-only HR communication assistant */
+/* Humanly — static-first HR communication assistant with optional Live AI */
 const STORAGE_KEY = "hr-assistant-state-v2";
 const BASE_DEMO_TIME = "2026-09-16T10:00:00";
+const LLM_TIMEOUT_MS = 8000;
+const SYSTEM_PROMPT = `You are Humanly, a thoughtful HR communication assistant.
+
+Write short, natural messages in Russian that help an HR manager communicate respectfully with an employee while still completing the work task.
+
+Rules:
+- Use the employee context and relevant communication history; do not invent facts.
+- Follow the requested tone of voice.
+- Be concise, warm-professional, and clear about why the response matters.
+- Never guilt, threaten, manipulate, or pressure the employee.
+- Offer an easy alternative when the employee may be busy.
+- For follow-up messages, treat the previous message as context: do not repeat its wording or mechanically paraphrase it. Continue the conversation naturally.
+- Do not use bureaucratic constructions such as “Настоящим напоминаем...”, “Уважаемый сотрудник...”, or “Вам необходимо...”, unless the context explicitly requires it.
+- Never reveal hidden reasoning or chain-of-thought.
+
+Return only valid JSON with this shape:
+{"subject":"...","body":"...","tone":"...","tags":["short-machine-readable-tag"]}`;
+const runtime = { apiAvailable: false, configured: false, model: "", statusLoaded: false };
 
 const purposeLabels = {
   enps: "eNPS / вовлечённость",
@@ -63,6 +81,7 @@ document.addEventListener("keydown", (event) => {
 
 processAutomation();
 render();
+refreshProviderStatus();
 
 function createSeedState() {
   const demoNow = new Date(BASE_DEMO_TIME);
@@ -114,6 +133,7 @@ function createSeedState() {
       ]
     }
   ];
+  employees.forEach((employee) => { employee.timezone = "Europe/Moscow"; });
 
   const requests = [];
   const drafts = [];
@@ -139,7 +159,7 @@ function createSeedState() {
     };
     requests.push(request);
     const employee = employees.find((item) => item.id === request.employeeId);
-    const requestDrafts = generateDrafts(request, employee, demoNow);
+    const requestDrafts = generateDemoDrafts(request, employee, demoNow);
     requestDrafts.forEach((draft) => drafts.push(draft));
 
     const initialOriginal = input.initialScheduledAt || input.createdAt;
@@ -188,7 +208,11 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.version === 2 && Array.isArray(parsed.requests) && Array.isArray(parsed.employees)) return parsed;
+      if (parsed && parsed.version === 2 && Array.isArray(parsed.requests) && Array.isArray(parsed.employees)) {
+        parsed.events.forEach((event) => { delete event.processing; });
+        parsed.drafts.forEach((draft) => { if (draft.generationStatus === "generating") { draft.generationStatus = "fallback"; draft.provider = "demo"; draft.status = draft.status === "sent" ? "sent" : "draft"; } });
+        return parsed;
+      }
     }
   } catch (error) {
     console.warn("Не удалось прочитать локальное состояние, загружаем demo data.", error);
@@ -305,7 +329,7 @@ function formatLongDate(value) { return new Intl.DateTimeFormat("ru-RU", { weekd
 function formatDateTime(value) { return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(toDate(value)); }
 function formatTime(value) { return new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(toDate(value)); }
 
-function generateDrafts(request, employee, generatedAt = new Date()) {
+function generateDemoDrafts(request, employee, generatedAt = new Date()) {
   const name = firstName(employee.fullName);
   const purpose = purposeLabel(request);
   const deadline = formatLongDate(request.deadlineDate);
@@ -331,7 +355,7 @@ function generateDrafts(request, employee, generatedAt = new Date()) {
   else followUpBody = `Привет, ${name}!\n\nПонимаю, что неделя могла быть плотной. Мягко напомню про фидбек по ${purpose} — он поможет нам улучшить рабочий опыт.\n\nМожно ответить в удобной форме или написать, если лучше вернуться к этому позже. Спасибо!`;
 
   const context = `Предпочтения: ${employee.communicationPreferences}. Риск: ${employee.riskLevel}. История: ${request.historySnapshot}.`;
-  const base = { requestId: request.id, tone: request.tone, generatedBy: "local", createdAt: iso(generatedAt) };
+  const base = { requestId: request.id, tone: request.tone, generatedBy: "demo", provider: "demo", providerModel: "", createdAt: iso(generatedAt), generationStatus: "ready" };
   return [
     { ...base, id: `draft-${request.id}-initial`, type: "initial", subject: initialSubject, body: initialBody, status: request.initialSentAt ? "sent" : "draft", prompt: buildPrompt(employee, request, "initial", context) },
     { ...base, id: `draft-${request.id}-follow-up`, type: "follow_up", subject: followUpSubject, body: followUpBody, status: request.followUpSentAt ? "sent" : "draft", prompt: buildPrompt(employee, request, "follow_up", context) }
@@ -341,6 +365,95 @@ function generateDrafts(request, employee, generatedAt = new Date()) {
 function buildPrompt(employee, request, type, context) {
   const instruction = type === "initial" ? "Напиши первое письмо-запрос обратной связи." : "Напиши мягкое follow-up письмо без ощущения претензии.";
   return `ROLE\nТы — бережный HR-коммуникационный ассистент.\n\nTASK\n${instruction}\n\nEMPLOYEE CONTEXT\nИмя: ${employee.fullName}\nРоль: ${employee.role}, ${employee.department}\n${context}\n\nREQUEST\nЦель: ${purposeLabel(request)}\nДедлайн: ${formatLongDate(request.deadlineDate)}\nТон: ${toneLabels[request.tone]}\nПриоритет: ${request.priority === "high" ? "высокий" : "обычный"}\n\nCONSTRAINTS\n- 2–3 минуты на ответ\n- коротко, по-человечески и с уважением\n- объяснить, зачем нужен ответ\n- не давить и предложить альтернативу\n- не использовать «Уважаемый», «напоминаем», «просрочено» или бюрократические формулировки\n\nOUTPUT\nВерни JSON с полями: subject, body.`;
+}
+
+function buildGenerationContext(request, employee, type, previousDraft = null) {
+  const daysSinceCreated = Math.max(0, Math.floor((new Date(state.demoNow) - new Date(request.createdAt)) / 86400000));
+  return {
+    employee: {
+      name: employee.fullName,
+      role: employee.role,
+      timezone: employee.timezone || "Europe/Moscow",
+      communicationPreferences: employee.communicationPreferences
+    },
+    communicationHistory: employee.communicationHistory.slice(0, 3),
+    request: {
+      purpose: purposeLabel(request),
+      deadline: formatLongDate(request.deadlineDate),
+      tone: toneLabels[request.tone],
+      urgency: request.priority === "high" ? "high" : "normal",
+      priority: request.priority
+    },
+    state: {
+      messageType: type,
+      daysSinceCreated,
+      hasResponse: Boolean(request.respondedAt),
+      previousAttempts: type === "follow_up" || request.followUpSentAt ? 1 : 0,
+      previousMessages: previousDraft ? [{ subject: previousDraft.subject, body: previousDraft.body }] : []
+    }
+  };
+}
+
+function buildLivePromptPreview(context) {
+  return `SYSTEM INSTRUCTIONS\n${SYSTEM_PROMPT}\n\nEMPLOYEE CONTEXT\n${JSON.stringify(context.employee, null, 2)}\n\nCOMMUNICATION HISTORY\n${JSON.stringify(context.communicationHistory, null, 2)}\n\nREQUEST\n${JSON.stringify(context.request, null, 2)}\n\nSTATE\n${JSON.stringify(context.state, null, 2)}\n\nOUTPUT\nsubject, body, tone, tags (JSON only)`;
+}
+
+async function generateWithProvider(context, fallbackDraft) {
+  const fallback = { ...fallbackDraft, generatedBy: "demo", provider: "demo", providerModel: "", generationStatus: "fallback" };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+  try {
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(context),
+      signal: controller.signal
+    });
+    if (!response.ok) return fallback;
+    const result = await response.json();
+    if (!result || typeof result.subject !== "string" || typeof result.body !== "string" || !result.subject.trim() || !result.body.trim()) return fallback;
+    return {
+      ...fallbackDraft,
+      subject: result.subject.trim(),
+      body: result.body.trim(),
+      tone: toneLabels[result.tone] ? result.tone : fallbackDraft.tone,
+      tags: Array.isArray(result.tags) ? result.tags.slice(0, 6) : [],
+      generatedBy: "openrouter",
+      provider: "openrouter",
+      providerModel: result.model || runtime.model,
+      generationStatus: "live",
+      prompt: buildLivePromptPreview(context)
+    };
+  } catch {
+    return fallback;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function refreshProviderStatus() {
+  try {
+    const response = await fetch("/api/status", { cache: "no-store" });
+    if (!response.ok) throw new Error("status_unavailable");
+    const result = await response.json();
+    runtime.apiAvailable = true;
+    runtime.configured = Boolean(result.configured);
+    runtime.model = result.model || "";
+  } catch {
+    runtime.apiAvailable = false;
+    runtime.configured = false;
+    runtime.model = "";
+  } finally {
+    runtime.statusLoaded = true;
+    if (ui.view === "detail") render();
+  }
+}
+
+function providerInfo(request) {
+  const drafts = getDrafts(request.id);
+  if (drafts.some((draft) => draft.generationStatus === "generating")) return { label: "Создаём сообщение…", className: "provider-pending" };
+  if (drafts.some((draft) => draft.provider === "openrouter")) return { label: `AI Live · ${runtime.model || "OpenRouter"}`, className: "provider-live" };
+  return { label: "Demo mode · offline-ready", className: "provider-demo" };
 }
 
 function processAutomation() {
@@ -366,13 +479,15 @@ function processAutomation() {
       if (initialDraft) initialDraft.status = "sent";
     }
     if (followUp && followUp.status === "planned" && now >= new Date(followUp.scheduledAt)) {
-      followUp.status = "sent";
-      followUp.sentAt = iso(now);
-      followUp.nextCheckAt = iso(addBusinessDays(now, state.settings.rescheduleStepDays, state.settings));
-      request.followUpSentAt = iso(now);
-      request.status = "follow_up_sent";
       const followUpDraft = getDraft(request.id, "follow_up");
-      if (followUpDraft) followUpDraft.status = "sent";
+      if (followUp.processing) return;
+      followUp.processing = true;
+      if (followUpDraft) {
+        followUpDraft.generationStatus = "generating";
+        followUpDraft.provider = "pending";
+      }
+      generateFollowUpForRequest(request.id);
+      return;
     }
     if (escalation && escalation.status === "planned" && now >= new Date(escalation.scheduledAt)) {
       escalation.status = "attention_needed";
@@ -385,6 +500,39 @@ function processAutomation() {
     }
   });
   persistState();
+}
+
+async function generateFollowUpForRequest(requestId) {
+  const request = getRequest(requestId);
+  const employee = request ? getEmployee(request.employeeId) : null;
+  const followUp = request ? getEvents(request.id).find((event) => event.type === "follow_up") : null;
+  const draft = request ? getDraft(request.id, "follow_up") : null;
+  if (!request || !employee || !followUp || !draft) return;
+  const previousDraft = getDraft(request.id, "initial");
+  const fallback = generateDemoDrafts(request, employee, new Date(state.demoNow)).find((item) => item.type === "follow_up");
+  const context = buildGenerationContext(request, employee, "follow_up", previousDraft);
+  const result = await generateWithProvider(context, fallback);
+  if (getResponse(request.id) || request.status === "responded") {
+    followUp.processing = false;
+    draft.status = "archived";
+    draft.generationStatus = "fallback";
+    draft.provider = "demo";
+    persistState();
+    render();
+    return;
+  }
+  Object.assign(draft, result, { id: draft.id, requestId: request.id, type: "follow_up", status: "sent", generationStatus: result.generationStatus });
+  const now = new Date(state.demoNow);
+  followUp.processing = false;
+  followUp.status = "sent";
+  followUp.sentAt = iso(now);
+  followUp.nextCheckAt = iso(addBusinessDays(now, state.settings.rescheduleStepDays, state.settings));
+  request.followUpSentAt = iso(now);
+  request.status = "follow_up_sent";
+  persistState();
+  processAutomation();
+  render();
+  toast(result.provider === "openrouter" ? "Follow-up создан через Live AI" : "Live AI недоступен — использован Demo fallback", result.provider === "openrouter" ? "success" : "warning");
 }
 
 function render() {
@@ -472,7 +620,8 @@ function renderNewRequest() {
   const deadlineDate = addCalendarDays(new Date(state.demoNow), Number(ui.newForm.deadlineDays) || 5);
   const followUpDate = scheduleAt(addCalendarDays(new Date(state.demoNow), state.settings.followUpAfterDays)).scheduledAt;
   const escalationDate = scheduleAt(addCalendarDays(new Date(state.demoNow), state.settings.escalationAfterDays)).scheduledAt;
-  return `<div class="page-intro"><div><div class="eyebrow">New communication</div><h1>Запустить бережный цикл</h1><p>Опишите контекст один раз — Humanly подготовит письмо, follow-up и контрольные точки.</p></div><div class="date-label">Демо-время<strong>${formatLongDate(state.demoNow)}</strong></div></div><div class="form-layout"><form class="panel form-panel" id="newRequestForm"><h2>Детали запроса</h2><p>Все поля можно изменить до запуска. После одного клика план будет готов.</p><div class="form-grid"><div class="field full"><label for="createEmployee">Сотрудник</label><select id="createEmployee" name="employeeId">${state.employees.map((item) => `<option value="${item.id}" ${item.id === employee.id ? "selected" : ""}>${escapeHtml(item.fullName)} · ${escapeHtml(item.role)}</option>`).join("")}</select><small>${escapeHtml(employee.communicationPreferences)} · история: ${employee.communicationHistory.length} события</small></div><div class="field"><label for="createPurpose">Цель обратной связи</label><select id="createPurpose" name="purpose"><option value="enps" ${ui.newForm.purpose === "enps" ? "selected" : ""}>eNPS / вовлечённость</option><option value="adaptation" ${ui.newForm.purpose === "adaptation" ? "selected" : ""}>Адаптация</option><option value="climate" ${ui.newForm.purpose === "climate" ? "selected" : ""}>Климат в команде</option><option value="custom" ${ui.newForm.purpose === "custom" ? "selected" : ""}>Свой фокус</option></select></div><div class="field"><label for="createDeadline">Дедлайн</label><select id="createDeadline" name="deadlineDays"><option value="2" ${ui.newForm.deadlineDays === "2" ? "selected" : ""}>Через 2 дня · ${formatDate(addCalendarDays(state.demoNow, 2))}</option><option value="5" ${ui.newForm.deadlineDays === "5" ? "selected" : ""}>Через 5 дней · ${formatDate(addCalendarDays(state.demoNow, 5))}</option><option value="7" ${ui.newForm.deadlineDays === "7" ? "selected" : ""}>Через 7 дней · ${formatDate(addCalendarDays(state.demoNow, 7))}</option></select></div>${ui.newForm.purpose === "custom" ? `<div class="field full"><label for="customGoalText">Свой фокус</label><textarea id="customGoalText" name="customGoalText" placeholder="Например: понять, где команде не хватает поддержки">${escapeHtml(ui.newForm.customGoalText)}</textarea></div>` : ""}<div class="field full"><label>Тон письма</label><div class="radio-options">${radioOption("tone", "friendly", "Дружелюбный", ui.newForm.tone)}${radioOption("tone", "supportive", "Поддерживающий", ui.newForm.tone)}${radioOption("tone", "concise", "Короткий", ui.newForm.tone)}${radioOption("tone", "urgent", "Деликатно срочный", ui.newForm.tone)}</div></div><div class="field full"><label>Приоритет</label><div class="radio-options">${radioOption("priority", "normal", "Обычный", ui.newForm.priority)}${radioOption("priority", "high", "Высокий", ui.newForm.priority)}</div></div></div><div class="form-footer"><button type="button" class="ghost-button" data-view="dashboard">Отмена</button><button type="submit" class="primary-button">Запустить коммуникацию <span>→</span></button></div></form><aside class="plan-preview"><div class="eyebrow">Plan preview</div><h3>Что произойдёт после запуска</h3><div class="preview-employee"><div class="avatar ${employee.avatarClass}">${initials(employee.fullName)}</div><div><strong>${escapeHtml(employee.fullName)}</strong><span>${escapeHtml(employee.role)} · ${escapeHtml(employee.department)}</span></div></div><div class="mini-timeline"><div class="mini-step"><strong>Сегодня · ${state.settings.workdayStart}</strong><span>Письмо с понятным контекстом и просьбой о фидбеке</span></div><div class="mini-step"><strong>${formatDate(followUpDate)} · ${formatTime(followUpDate)}</strong><span>Мягкий follow-up, если ответа нет</span></div><div class="mini-step"><strong>${formatDate(escalationDate)} · ${formatTime(escalationDate)}</strong><span>Контрольная точка для HR</span></div></div><div class="preview-footnote">План учитывает рабочие часы 10:00–18:00, тихое время и выходные. Если сообщение попадает на выходной — оно сдвинется автоматически.</div></aside></div>`;
+  const submitLabel = ui.isLaunching ? "Создаём персональное сообщение…" : "Запустить коммуникацию";
+  return `<div class="page-intro"><div><div class="eyebrow">New communication</div><h1>Запустить бережный цикл</h1><p>Опишите контекст один раз — Humanly подготовит письмо, follow-up и контрольные точки.</p></div><div class="date-label">Демо-время<strong>${formatLongDate(state.demoNow)}</strong></div></div><div class="form-layout"><form class="panel form-panel" id="newRequestForm"><h2>Детали запроса</h2><p>Все поля можно изменить до запуска. После одного клика план будет готов.</p><div class="form-grid"><div class="field full"><label for="createEmployee">Сотрудник</label><select id="createEmployee" name="employeeId" ${ui.isLaunching ? "disabled" : ""}>${state.employees.map((item) => `<option value="${item.id}" ${item.id === employee.id ? "selected" : ""}>${escapeHtml(item.fullName)} · ${escapeHtml(item.role)}</option>`).join("")}</select><small>${escapeHtml(employee.communicationPreferences)} · история: ${employee.communicationHistory.length} события</small></div><div class="field"><label for="createPurpose">Цель обратной связи</label><select id="createPurpose" name="purpose" ${ui.isLaunching ? "disabled" : ""}><option value="enps" ${ui.newForm.purpose === "enps" ? "selected" : ""}>eNPS / вовлечённость</option><option value="adaptation" ${ui.newForm.purpose === "adaptation" ? "selected" : ""}>Адаптация</option><option value="climate" ${ui.newForm.purpose === "climate" ? "selected" : ""}>Климат в команде</option><option value="custom" ${ui.newForm.purpose === "custom" ? "selected" : ""}>Свой фокус</option></select></div><div class="field"><label for="createDeadline">Дедлайн</label><select id="createDeadline" name="deadlineDays" ${ui.isLaunching ? "disabled" : ""}><option value="2" ${ui.newForm.deadlineDays === "2" ? "selected" : ""}>Через 2 дня · ${formatDate(addCalendarDays(state.demoNow, 2))}</option><option value="5" ${ui.newForm.deadlineDays === "5" ? "selected" : ""}>Через 5 дней · ${formatDate(addCalendarDays(state.demoNow, 5))}</option><option value="7" ${ui.newForm.deadlineDays === "7" ? "selected" : ""}>Через 7 дней · ${formatDate(addCalendarDays(state.demoNow, 7))}</option></select></div>${ui.newForm.purpose === "custom" ? `<div class="field full"><label for="customGoalText">Свой фокус</label><textarea id="customGoalText" name="customGoalText" placeholder="Например: понять, где команде не хватает поддержки" ${ui.isLaunching ? "disabled" : ""}>${escapeHtml(ui.newForm.customGoalText)}</textarea></div>` : ""}<div class="field full"><label>Тон письма</label><div class="radio-options">${radioOption("tone", "friendly", "Дружелюбный", ui.newForm.tone)}${radioOption("tone", "supportive", "Поддерживающий", ui.newForm.tone)}${radioOption("tone", "concise", "Короткий", ui.newForm.tone)}${radioOption("tone", "urgent", "Деликатно срочный", ui.newForm.tone)}</div></div><div class="field full"><label>Приоритет</label><div class="radio-options">${radioOption("priority", "normal", "Обычный", ui.newForm.priority)}${radioOption("priority", "high", "Высокий", ui.newForm.priority)}</div></div></div><div class="form-footer"><button type="button" class="ghost-button" data-view="dashboard">Отмена</button><button type="submit" class="primary-button" ${ui.isLaunching ? "disabled" : ""}>${submitLabel} <span>${ui.isLaunching ? "◌" : "→"}</span></button></div></form><aside class="plan-preview"><div class="eyebrow">Plan preview</div><h3>Что произойдёт после запуска</h3><div class="preview-employee"><div class="avatar ${employee.avatarClass}">${initials(employee.fullName)}</div><div><strong>${escapeHtml(employee.fullName)}</strong><span>${escapeHtml(employee.role)} · ${escapeHtml(employee.department)}</span></div></div><div class="mini-timeline"><div class="mini-step"><strong>Сегодня · ${state.settings.workdayStart}</strong><span>Письмо с понятным контекстом и просьбой о фидбеке</span></div><div class="mini-step"><strong>${formatDate(followUpDate)} · ${formatTime(followUpDate)}</strong><span>Мягкий follow-up, если ответа нет</span></div><div class="mini-step"><strong>${formatDate(escalationDate)} · ${formatTime(escalationDate)}</strong><span>Контрольная точка для HR</span></div></div><div class="preview-footnote">План учитывает рабочие часы 10:00–18:00, тихое время и выходные. Если сообщение попадает на выходной — оно сдвинется автоматически.</div></aside></div>`;
 }
 
 function radioOption(name, value, label, selected) { return `<div class="radio-option"><input type="radio" id="${name}-${value}" name="${name}" value="${value}" ${selected === value ? "checked" : ""}><label for="${name}-${value}">${label}</label></div>`; }
@@ -485,7 +634,8 @@ function renderDetail(requestId) {
   const tab = ui.detailTab;
   const requestDrafts = getDrafts(request.id);
   if (tab === "prompt" && !requestDrafts.some((draft) => draft.id === ui.promptDraftId)) ui.promptDraftId = requestDrafts[0]?.id || null;
-  return `<div class="detail-header"><button class="back-link" data-view="requests">← Все коммуникации</button><div class="detail-title-row"><div class="detail-title"><div class="avatar ${employee.avatarClass}">${initials(employee.fullName)}</div><div><h1>${escapeHtml(purposeLabel(request))}</h1><p>${escapeHtml(employee.fullName)} · ${escapeHtml(employee.role)} · создано ${formatDate(request.createdAt)}</p></div></div><div class="detail-actions">${!response && request.status !== "archived" ? `<button class="secondary-button small-button" data-action="open-response" data-request-id="${request.id}">Симулировать ответ</button>` : ""}<button class="ghost-button small-button" data-action="archive-request" data-request-id="${request.id}">Архивировать</button></div></div><div class="detail-metadata"><span class="status-badge ${statusClass(request.status)}">${statusLabels[request.status]}</span><span class="meta-chip">Тон <strong>${toneLabels[request.tone]}</strong></span><span class="meta-chip">Дедлайн <strong>${formatDate(request.deadlineDate)}</strong></span><span class="meta-chip">Приоритет <strong>${request.priority === "high" ? "Высокий" : "Обычный"}</strong></span>${response ? `<span class="meta-chip">Ответ <strong>${formatDateTime(response.respondedAt)}</strong></span>` : ""}</div></div><div class="detail-layout"><div class="detail-main-panel"><div class="tabs"><button class="tab ${tab === "drafts" ? "active" : ""}" data-detail-tab="drafts">Письма</button><button class="tab ${tab === "timeline" ? "active" : ""}" data-detail-tab="timeline">Timeline</button><button class="tab ${tab === "history" ? "active" : ""}" data-detail-tab="history">История</button><button class="tab ${tab === "prompt" ? "active" : ""}" data-detail-tab="prompt">Prompt preview</button></div>${renderDetailTab(request, employee, tab)}</div><aside class="detail-side-sticky">${renderDetailSide(request, employee)}</aside></div>`;
+  const provider = providerInfo(request);
+  return `<div class="detail-header"><button class="back-link" data-view="requests">← Все коммуникации</button><div class="detail-title-row"><div class="detail-title"><div class="avatar ${employee.avatarClass}">${initials(employee.fullName)}</div><div><h1>${escapeHtml(purposeLabel(request))}</h1><p>${escapeHtml(employee.fullName)} · ${escapeHtml(employee.role)} · создано ${formatDate(request.createdAt)}</p></div></div><div class="detail-actions">${!response && request.status !== "archived" ? `<button class="secondary-button small-button" data-action="open-response" data-request-id="${request.id}">Симулировать ответ</button>` : ""}<button class="ghost-button small-button" data-action="archive-request" data-request-id="${request.id}">Архивировать</button></div></div><div class="detail-metadata"><span class="status-badge ${statusClass(request.status)}">${statusLabels[request.status]}</span><span class="provider-chip ${provider.className}">● ${escapeHtml(provider.label)}</span><span class="meta-chip">Тон <strong>${toneLabels[request.tone]}</strong></span><span class="meta-chip">Дедлайн <strong>${formatDate(request.deadlineDate)}</strong></span><span class="meta-chip">Приоритет <strong>${request.priority === "high" ? "Высокий" : "Обычный"}</strong></span>${response ? `<span class="meta-chip">Ответ <strong>${formatDateTime(response.respondedAt)}</strong></span>` : ""}</div></div><div class="detail-layout"><div class="detail-main-panel"><div class="tabs"><button class="tab ${tab === "drafts" ? "active" : ""}" data-detail-tab="drafts">Письма</button><button class="tab ${tab === "timeline" ? "active" : ""}" data-detail-tab="timeline">Timeline</button><button class="tab ${tab === "history" ? "active" : ""}" data-detail-tab="history">История</button><button class="tab ${tab === "prompt" ? "active" : ""}" data-detail-tab="prompt">Prompt preview</button></div>${renderDetailTab(request, employee, tab)}</div><aside class="detail-side-sticky">${renderDetailSide(request, employee)}</aside></div>`;
 }
 
 function renderDetailTab(request, employee, tab) {
@@ -498,7 +648,11 @@ function renderDetailTab(request, employee, tab) {
 function renderEmailCard(draft, request) {
   const sent = draft.status === "sent";
   const archived = draft.status === "archived";
-  return `<article class="email-card"><div class="email-card-top"><div class="email-card-title"><span class="email-icon">✉</span><div><strong>${draft.type === "initial" ? "Первое письмо" : "Мягкое напоминание"}</strong><span>${toneLabels[draft.tone]} · ${sent ? "отправлено" : archived ? "архивировано" : "готово к отправке"}</span></div></div><div class="email-actions"><span class="meta-chip">${sent ? "Sent" : archived ? "Archived" : "Draft"}</span><button class="ghost-button small-button" data-action="copy-email" data-draft-id="${draft.id}">Копировать</button><button class="ghost-button small-button" data-action="open-prompt" data-draft-id="${draft.id}">Промпт</button></div></div><div class="email-subject">${escapeHtml(draft.subject)}</div><div class="email-body">${escapeHtml(draft.body)}</div><div class="email-footer"><span class="local-generator"><i></i> Сгенерировано локально · без API</span><span>${sent ? "Коммуникация в пути" : archived ? "Больше не отправится" : "Можно перегенерировать"}</span></div></article>`;
+  const generating = draft.generationStatus === "generating";
+  const providerLabel = generating ? "Создаём персональное сообщение…" : draft.provider === "openrouter" ? `AI Live · ${runtime.model || "OpenRouter"}` : draft.provider === "pending" ? "Готовится перед отправкой" : "Demo fallback · offline-ready";
+  const statusLabel = generating ? "Generating" : sent ? "Sent" : archived ? "Archived" : draft.status === "scheduled" ? "Scheduled" : "Draft";
+  const body = generating ? "Создаём персональное сообщение с учётом предыдущей коммуникации…" : draft.body;
+  return `<article class="email-card"><div class="email-card-top"><div class="email-card-title"><span class="email-icon">✉</span><div><strong>${draft.type === "initial" ? "Первое письмо" : "Мягкое напоминание"}</strong><span>${toneLabels[draft.tone]} · ${sent ? "отправлено" : archived ? "архивировано" : draft.status === "scheduled" ? "будет создано перед отправкой" : "готово к отправке"}</span></div></div><div class="email-actions"><span class="meta-chip">${statusLabel}</span><button class="ghost-button small-button" data-action="copy-email" data-draft-id="${draft.id}">Копировать</button><button class="ghost-button small-button" data-action="open-prompt" data-draft-id="${draft.id}">Промпт</button></div></div><div class="email-subject">${escapeHtml(generating ? "Персонализируем тему…" : draft.subject)}</div><div class="email-body">${escapeHtml(body)}</div><div class="email-footer"><span class="local-generator"><i></i> ${escapeHtml(providerLabel)}</span><span>${sent ? "Коммуникация в пути" : archived ? "Больше не отправится" : draft.status === "scheduled" ? "Будет сгенерировано при наступлении follow-up" : "Можно перегенерировать"}</span></div></article>`;
 }
 
 function renderTimelinePanel(request) {
@@ -604,24 +758,36 @@ function navigate(view, requestId = null) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function launchRequest() {
+async function launchRequest() {
+  if (ui.isLaunching) return;
   const employee = getEmployee(ui.newForm.employeeId);
   if (!employee) return;
+  ui.isLaunching = true;
+  render();
   const now = new Date(state.demoNow);
   const request = { id: `r-${Date.now()}`, employeeId: employee.id, purpose: ui.newForm.purpose, customGoalText: ui.newForm.customGoalText.trim(), deadlineDate: iso(addCalendarDays(now, Number(ui.newForm.deadlineDays) || 5)), tone: ui.newForm.tone, priority: ui.newForm.priority, status: "ready", createdAt: iso(now), initialSentAt: null, followUpSentAt: null, respondedAt: null, historySnapshot: getHistorySnapshot(employee), manualContactHint: "" };
+  const demoDrafts = generateDemoDrafts(request, employee, now);
+  const initialFallback = demoDrafts.find((draft) => draft.type === "initial");
+  const initialContext = buildGenerationContext(request, employee, "initial");
+  const initialDraft = await generateWithProvider(initialContext, initialFallback);
+  initialDraft.status = "draft";
+  const followUpFallback = demoDrafts.find((draft) => draft.type === "follow_up");
+  const followUpContext = buildGenerationContext(request, employee, "follow_up", initialDraft);
+  const followUpDraft = { ...followUpFallback, status: "scheduled", provider: "pending", generatedBy: "pending", generationStatus: "scheduled", prompt: buildLivePromptPreview(followUpContext) };
   state.requests.unshift(request);
-  const requestDrafts = generateDrafts(request, employee, now);
-  state.drafts.push(...requestDrafts);
-  const initial = makeEvent(request, employee, "initial_send", now, state.settings, { title: "Первое письмо", description: "Короткий запрос обратной связи с понятным контекстом.", linkedDraftId: requestDrafts[0].id });
-  const followUp = makeEvent(request, employee, "follow_up", addCalendarDays(now, state.settings.followUpAfterDays), state.settings, { title: "Мягкое напоминание", description: "Если ответа нет, напомним бережно и предложим помощь.", linkedDraftId: requestDrafts[1].id });
+  state.drafts.push(initialDraft, followUpDraft);
+  const initial = makeEvent(request, employee, "initial_send", now, state.settings, { title: "Первое письмо", description: "Короткий запрос обратной связи с понятным контекстом.", linkedDraftId: initialDraft.id });
+  const followUp = makeEvent(request, employee, "follow_up", addCalendarDays(now, state.settings.followUpAfterDays), state.settings, { title: "Мягкое напоминание", description: "Если ответа нет, напомним бережно и предложим помощь.", linkedDraftId: followUpDraft.id });
   const escalation = makeEvent(request, employee, "escalation_call", addCalendarDays(now, state.settings.escalationAfterDays), state.settings, { title: "Точка внимания HR", description: "Рекомендуется личный контакт или другой удобный канал." });
   state.events.push(initial, followUp, escalation);
   processAutomation();
   ui.selectedRequestId = request.id;
   ui.view = "detail";
   ui.detailTab = "drafts";
+  ui.promptDraftId = null;
+  ui.isLaunching = false;
   render();
-  toast(`Коммуникация для ${employee.fullName} запущена`, "success");
+  toast(initialDraft.provider === "openrouter" ? `Коммуникация для ${employee.fullName} запущена через Live AI` : `Коммуникация для ${employee.fullName} запущена в Demo fallback`, initialDraft.provider === "openrouter" ? "success" : "warning");
 }
 
 function advanceTime(days) {
@@ -648,7 +814,7 @@ function updateDetailTone(tone) {
   const employee = getEmployee(request.employeeId);
   const oldStatuses = Object.fromEntries(getDrafts(request.id).map((draft) => [draft.type, draft.status]));
   state.drafts = state.drafts.filter((draft) => draft.requestId !== request.id);
-  const newDrafts = generateDrafts(request, employee, new Date(state.demoNow)).map((draft) => ({ ...draft, status: oldStatuses[draft.type] || draft.status }));
+  const newDrafts = generateDemoDrafts(request, employee, new Date(state.demoNow)).map((draft) => ({ ...draft, status: oldStatuses[draft.type] || draft.status }));
   state.drafts.push(...newDrafts); persistState(); render(); toast(`Тон изменён: ${toneLabels[tone]}`, "success");
 }
 
@@ -657,7 +823,7 @@ function regenerateRequest(requestId) {
   const employee = getEmployee(request.employeeId);
   const oldStatuses = Object.fromEntries(getDrafts(request.id).map((draft) => [draft.type, draft.status]));
   state.drafts = state.drafts.filter((draft) => draft.requestId !== request.id);
-  state.drafts.push(...generateDrafts(request, employee, new Date(state.demoNow)).map((draft) => ({ ...draft, status: oldStatuses[draft.type] || draft.status })));
+  state.drafts.push(...generateDemoDrafts(request, employee, new Date(state.demoNow)).map((draft) => ({ ...draft, status: oldStatuses[draft.type] || draft.status })));
   persistState(); render(); toast("Письма перегенерированы с учётом контекста", "success");
 }
 
@@ -686,7 +852,7 @@ function openPromptModal(draftId) {
 
 function openVariantsModal(requestId) {
   const request = getRequest(requestId); const employee = getEmployee(request.employeeId); if (!request || !employee) return;
-  const variants = ["friendly", "supportive", "concise", "urgent", "business_soft"].map((tone) => { const variantRequest = { ...request, tone }; return { tone, draft: generateDrafts(variantRequest, employee, new Date(state.demoNow))[0] }; });
+  const variants = ["friendly", "supportive", "concise", "urgent", "business_soft"].map((tone) => { const variantRequest = { ...request, tone }; return { tone, draft: generateDemoDrafts(variantRequest, employee, new Date(state.demoNow))[0] }; });
   const modal = document.getElementById("modal");
   modal.innerHTML = `<div class="modal-header"><div><div class="eyebrow">Tone gallery</div><h2>Пять способов сказать бережно</h2><p>Один контекст — разные оттенки коммуникации.</p></div><button class="modal-close" data-action="close-modal">×</button></div><div class="variant-grid">${variants.map((item) => `<article class="variant-card"><strong>${toneLabels[item.tone]}</strong><p>${escapeHtml(item.draft.body)}</p></article>`).join("")}</div><div class="modal-footer"><button class="primary-button" data-action="close-modal">Закрыть</button></div>`;
   document.getElementById("modalBackdrop").hidden = false;

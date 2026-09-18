@@ -18,7 +18,7 @@ Alternatives rejected:
 
 React/Vite и серверная БД — добавляют build/runtime dependency без ценности для core workflow.
 
-### ADR-2: Deterministic local generator with LLM-ready prompt
+### ADR-2: Provider abstraction with deterministic fallback
 
 Context:
 
@@ -26,15 +26,15 @@ Context:
 
 Decision:
 
-Генерировать structured drafts локальными правилами, хранить prompt preview и разделить контекст от provider-а.
+Использовать единый `MessageGenerator`: при доступном локальном proxy он вызывает `OpenRouterProvider`, а при любой ошибке — deterministic `DemoProvider`. Prompt preview, контекст и structured output отделены от UI.
 
 Why:
 
-Demo всегда воспроизводим; структура prompt уже показывает путь к реальному LLM adapter.
+Live AI повышает качество текста, но DemoProvider сохраняет воспроизводимый end-to-end сценарий. API key остаётся только в локальном proxy.
 
 Alternatives rejected:
 
-Прямая зависимость от API — риск сети, rate limit, ключей и непредсказуемого текста во время защиты.
+Прямая зависимость frontend от API — риск CORS, утечки ключа, сети, rate limit и непредсказуемого текста во время защиты.
 
 ### ADR-3: Simulated time as first-class state
 

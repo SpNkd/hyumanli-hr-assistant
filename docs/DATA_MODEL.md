@@ -14,6 +14,7 @@ interface Employee {
   workDays: number[];
   workStart: string;
   workEnd: string;
+  timezone: string;
   communicationPreferences: string;
   communicationHistory: HistoryItem[];
   riskLevel: "low" | "medium" | "high";
@@ -43,7 +44,10 @@ interface EmailDraft {
   subject: string;
   body: string;
   tone: string;
-  generatedBy: "local" | "llm_optional";
+  generatedBy: "demo" | "openrouter" | "pending";
+  provider: "demo" | "openrouter" | "pending";
+  providerModel: string;
+  generationStatus: "ready" | "scheduled" | "generating" | "live" | "fallback";
   createdAt: string;
   status: "draft" | "sent" | "archived";
   prompt: string;
