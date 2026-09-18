@@ -8,7 +8,7 @@
 
 - Открыть свежую вкладку ХьюманЛИ и проверить seed: Дмитрий, Елена, Игорь.
 - Для основной защиты открыть опубликованную [GitHub Pages-демо](https://spnkd.github.io/hyumanli-hr-assistant/): backend уже подключён, ручная подготовка не нужна.
-- Публичный provider badge ожидаемо показывает `AI Live · BotHub / deepseek-v3.2`; при временной ошибке можно продолжить с `Demo fallback · offline-ready`.
+- Публичный provider badge ожидаемо показывает `AI Live · BotHub / deepseek-v4-flash`; при временной ошибке можно продолжить с `Demo fallback · offline-ready`.
 - Для локального прогона можно запустить `node server.js`; это отдельный OpenRouter/Qwen proxy с ключом только в `.env`.
 - Для полностью автономного demo можно открыть `index.html` напрямую: DemoProvider покрывает тот же workflow без сети.
 - Если состояние изменилось, открыть **Настройки → Сбросить demo data**.

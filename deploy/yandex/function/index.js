@@ -55,7 +55,7 @@ async function handleGenerate(event, origin) {
         temperature: 0.65,
         max_tokens: 280
       }),
-      timeoutMs: 7800
+      timeoutMs: 12000
     });
     if (result.statusCode < 200 || result.statusCode >= 300) return response(502, { error: "provider_unavailable" }, origin);
     const payload = JSON.parse(result.body);

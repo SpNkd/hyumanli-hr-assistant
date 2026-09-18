@@ -5,7 +5,7 @@
 Топология:
 
 ```text
-GitHub Pages → Yandex API Gateway → Yandex Cloud Function → BotHub / DeepSeek V3.2
+GitHub Pages → Yandex API Gateway → Yandex Cloud Function → BotHub / DeepSeek V4 Flash
 ```
 
 Для опубликованной demo-версии секрет `BOTHUB_API_KEY` передаётся только в environment версии функции. В репозитории хранится только `.env.example` и безопасная конфигурация публичного API URL.
@@ -23,6 +23,6 @@ GitHub Pages → Yandex API Gateway → Yandex Cloud Function → BotHub / DeepS
 - `POST /api/generate` — принимает ограниченный context и возвращает structured message;
 - CORS настроен на точные origins, wildcard `*` не используется.
 
-Провайдер задаётся environment-параметрами `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL` и `LLM_API_KEY`. Для текущей Yandex demo-конфигурации используются `bothub`, `https://openai.bothub.chat/v1` и `deepseek-v3.2`.
+Провайдер задаётся environment-параметрами `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL` и `LLM_API_KEY`. Для текущей Yandex demo-конфигурации используются `bothub`, `https://openai.bothub.chat/v1` и `deepseek-v4-flash`.
 
 `gateway.yaml` содержит только публичные resource IDs и origins. Не добавляйте в этот каталог ключи, токены или raw secrets.

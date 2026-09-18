@@ -135,7 +135,7 @@ node server.js
 
 Опубликованная демо-версия доступна на [GitHub Pages](https://spnkd.github.io/hyumanli-hr-assistant/). Она не требует ручного запуска backend: статический frontend обращается к Yandex API Gateway, а ключ провайдера остаётся только в environment Yandex Function.
 
-Публичный Live AI-провайдер: BotHub / `deepseek-v3.2`. Если провайдер временно недоступен, интерфейс переключается на deterministic DemoProvider.
+Публичный Live AI-провайдер: BotHub / `deepseek-v4-flash`. Если провайдер временно недоступен, интерфейс переключается на deterministic DemoProvider.
 
 ### Live AI
 

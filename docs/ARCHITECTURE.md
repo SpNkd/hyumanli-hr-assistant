@@ -15,7 +15,7 @@ flowchart TD
   Generator --> Guard[Communication Guard]
   Guard --> Channel[Channel / Demo]
   Channel --> Result[Send / Approval / Human]
-  Generator -. Public Live AI .-> Live[BotHub / DeepSeek V3.2]
+  Generator -. Public Live AI .-> Live[BotHub / DeepSeek V4 Flash]
   Generator -. offline fallback .-> Demo[DemoProvider]
 ```
 

@@ -1,7 +1,7 @@
 /* ХьюманЛИ — static-first HR communication assistant with optional Live AI */
 const STORAGE_KEY = "hr-assistant-state-v2";
 const BASE_DEMO_TIME = "2026-09-16T10:00:00";
-const LLM_TIMEOUT_MS = 8000;
+const LLM_TIMEOUT_MS = 14000;
 const SYSTEM_PROMPT = `You are ХьюманЛИ, a thoughtful HR communication assistant.
 
 Write short, natural messages in Russian that help an HR manager communicate respectfully with an employee while still completing the work task.
