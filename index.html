@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f9fc" />
+    <title>Humanly — HR Communication Assistant</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand-lockup">
+          <div class="brand-mark"><span></span><span></span><span></span></div>
+          <div>
+            <div class="brand-name">humanly</div>
+            <div class="brand-caption">HR communication assistant</div>
+          </div>
+        </div>
+
+        <nav class="main-nav" aria-label="Основная навигация">
+          <button class="nav-item active" data-view="dashboard"><span class="nav-icon">◫</span>Обзор</button>
+          <button class="nav-item" data-view="requests"><span class="nav-icon">◎</span>Коммуникации <span class="nav-count" id="navRequestCount">0</span></button>
+          <button class="nav-item" data-view="new"><span class="nav-icon">＋</span>Новая коммуникация</button>
+          <button class="nav-item" data-view="people"><span class="nav-icon">♧</span>Сотрудники</button>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="sidebar-promise">
+          <div class="promise-icon">✦</div>
+          <div>
+            <strong>One action. More care.</strong>
+            <span>Пишем бережно, планируем вовремя.</span>
+          </div>
+        </div>
+        <button class="nav-item sidebar-settings" data-view="settings"><span class="nav-icon">⚙</span>Настройки</button>
+        <div class="profile-chip">
+          <div class="avatar avatar-teal">АС</div>
+          <div><strong>Анна Смирнова</strong><span>People partner</span></div>
+          <span class="profile-more">•••</span>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobileMenu" data-action="mobile-menu" aria-label="Открыть меню">☰</button>
+          <div class="breadcrumbs" id="breadcrumbs"><span>Workspace</span><b>/</b><strong>Обзор</strong></div>
+          <div class="topbar-actions">
+            <div class="demo-clock">
+              <span class="live-dot"></span>
+              <span class="demo-clock-label">Демо-время</span>
+              <strong id="demoDateTime">—</strong>
+              <div class="clock-actions">
+                <button data-action="advance-time" data-days="1" title="Прибавить 1 день">+1д</button>
+                <button data-action="advance-time" data-days="3" title="Прибавить 3 дня">+3д</button>
+                <button data-action="advance-time" data-days="7" title="Прибавить 7 дней">+7д</button>
+              </div>
+            </div>
+            <button class="icon-button" data-action="reset-date" title="Сбросить демо-время">↺</button>
+            <button class="primary-button compact" data-view="new"><span>＋</span> Новая коммуникация</button>
+          </div>
+        </header>
+
+        <div class="content" id="appContent"></div>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="modalBackdrop" hidden>
+      <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></section>
+    </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
