@@ -23,7 +23,7 @@
 - **Communication Guard** — проверяет краткость, тон, повторы, частоту касаний и допустимость отправки.
 - **Sensitive topic approval** — компенсация, performance, конфликт и другие чувствительные темы требуют подтверждения HR.
 - **Human escalation** — после повторного молчания система рекомендует личный контакт.
-- **Live AI + deterministic fallback** — OpenRouter/Qwen улучшает формулировку, а DemoProvider сохраняет тот же workflow без сети и ключа.
+- **Live AI + deterministic fallback** — публичная Pages-демо использует BotHub/DeepSeek через Yandex, а DemoProvider сохраняет тот же workflow без сети и ключа.
 
 ## Как это работает
 
@@ -37,7 +37,7 @@ flowchart TD
   Guard --> Outcome[Send / Approval / Human]
   Outcome --> Response[Response]
   Response --> Next[Next Decision]
-  Generator -. Live AI .-> OpenRouter[OpenRouter / Qwen]
+  Generator -. Live AI .-> Live[BotHub / DeepSeek V3.2]
   Generator -. Offline fallback .-> Demo[DemoProvider]
 ```
 
@@ -105,7 +105,8 @@ flowchart TD
 
 - vanilla HTML, CSS и JavaScript без runtime-зависимостей;
 - Node.js built-in `http` как минимальный локальный proxy для Live AI;
-- OpenRouter и Qwen через структурированный JSON-контракт;
+- BotHub / DeepSeek V3.2 в публичной Pages-демо и OpenRouter / Qwen для локального proxy через структурированный JSON-контракт;
+- GitHub Pages + Yandex API Gateway + Yandex Cloud Function для опубликованного Live AI;
 - `localStorage` для локального состояния demo;
 - Mermaid для архитектурных схем;
 - Git для версионирования.
@@ -129,6 +130,12 @@ node server.js
 ```
 
 Затем откройте <http://localhost:4173>. Если `.env` отсутствует, приложение остаётся offline-ready.
+
+### Online demo
+
+Опубликованная демо-версия доступна на [GitHub Pages](https://spnkd.github.io/hyumanli-hr-assistant/). Она не требует ручного запуска backend: статический frontend обращается к Yandex API Gateway, а ключ провайдера остаётся только в environment Yandex Function.
+
+Публичный Live AI-провайдер: BotHub / `deepseek-v3.2`. Если провайдер временно недоступен, интерфейс переключается на deterministic DemoProvider.
 
 ### Live AI
 
@@ -170,7 +177,7 @@ node server.js
 - локальный HR workspace с Inbox, карточками кейсов и навигацией;
 - rule-based Decision Engine с объяснимым следующим шагом;
 - Communication Memory и персональный контекст сотрудника;
-- генерация через OpenRouter/Qwen или DemoProvider;
+- генерация через публичный BotHub/DeepSeek, локальный OpenRouter/Qwen или DemoProvider;
 - timing с рабочими часами, quiet hours и выходными;
 - follow-up, симуляция ответа и auto-close будущих событий;
 - Communication Check и approval для sensitive topics;

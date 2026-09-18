@@ -4,7 +4,7 @@
 
 **ХьюманЛИ — ассистент полного цикла HR-коммуникаций: знает, кому, когда и как написать — и когда остановиться.**
 
-Не начинайте с OpenRouter, Qwen или localStorage. Начинайте с ручного коммуникационного цикла HR, затем показывайте workspace, AI-разделение и human boundary.
+Не начинайте с названия провайдера или localStorage. Начинайте с ручного коммуникационного цикла HR, затем показывайте workspace, AI-разделение и human boundary.
 
 ## Demo-flow · 2 минуты
 
@@ -106,7 +106,7 @@ Demo Analytics считает response rate, среднее время отве�
 ## 12 вопросов жюри
 
 1. **Где здесь настоящий AI?**
-   Live path отправляет контекст через локальный proxy в OpenRouter/Qwen и получает структурированный текст письма. Если provider недоступен, DemoProvider возвращает deterministic fallback с тем же контрактом.
+   Публичный Live path отправляет контекст через Yandex API Gateway и Function в BotHub/DeepSeek и получает структурированный текст письма. Если provider недоступен, DemoProvider возвращает deterministic fallback с тем же контрактом.
 
 2. **Что происходит без сети или ключа?**
    Можно открыть `index.html` напрямую: state, rules, simulated time, response flow и DemoProvider работают локально. Реальная доставка при этом не происходит — это честная граница MVP.
@@ -157,7 +157,7 @@ Demo Analytics считает response rate, среднее время отве�
 - settings с `autopilot`, `review`, `recommendation`;
 - Mermaid architecture и `server.js` proxy;
 - Data model и localStorage migration;
-- OpenRouter/Qwen и fallback provider;
+- публичный BotHub/DeepSeek, локальный OpenRouter/Qwen и fallback provider;
 - Campaigns/Analytics как дополнительные поверхности MVP.
 
 ## Финальный checklist

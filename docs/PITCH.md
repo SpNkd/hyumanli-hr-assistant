@@ -29,7 +29,7 @@ Communication Memory derived из локальной истории показы
 ## 4. Где используется AI
 
 - `Decision Engine` детерминированно выбирает action, timing, channel и escalation.
-- `Message Generator` формулирует естественный русский текст через OpenRouter/Qwen.
+- `Message Generator` формулирует естественный русский текст через публичный BotHub/DeepSeek; локально поддержан OpenRouter/Qwen proxy.
 - `Communication Check` проверяет краткость, уважительный тон, повторы, частоту и допустимое время.
 - При недоступности Live AI включается deterministic DemoProvider; workflow не ломается.
 
@@ -49,7 +49,7 @@ Communication Memory derived из локальной истории показы
 
 ## 7. Почему такая архитектура
 
-Local-first/static-first даёт мгновенный запуск и offline-ready demo. Backend и БД не нужны для текущего MVP с synthetic profiles и simulated delivery; сложность не должна скрывать проверяемый workflow.
+Local-first/static-first даёт мгновенный запуск и offline-ready demo. Публичный frontend остаётся статическим, а небольшой Yandex serverless proxy скрывает ключ провайдера и даёт Live AI без полноценной БД. Backend и БД не нужны для текущего MVP с synthetic profiles и simulated delivery; сложность не должна скрывать проверяемый workflow.
 
 Production evolution: реальные Email/Teams/Slack adapters, calendar, server-side storage, auth/RBAC, audit trail, opt-out и delivery analytics. Это следующий слой, а не уже реализованная capability.
 

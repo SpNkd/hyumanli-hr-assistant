@@ -169,7 +169,7 @@ Split-screen из двух состояний: Dmitry `Ответ получен
 
 ### Visual
 
-Упрощённая схема из `ARCHITECTURE.md`: **HR → Workspace → Decision Engine → Context / Memory / Policy → Message Generator → Guard → Channel**, сбоку `OpenRouter / Qwen` и `DemoProvider`.
+Упрощённая схема из `ARCHITECTURE.md`: **HR → Workspace → Decision Engine → Context / Memory / Policy → Message Generator → Guard → Channel**, сбоку `BotHub / DeepSeek` и `DemoProvider`.
 
 ### What not to write
 

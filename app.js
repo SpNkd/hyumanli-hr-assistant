@@ -18,7 +18,18 @@ Rules:
 
 Return only valid JSON with this shape:
 {"subject":"...","body":"...","tone":"...","tags":["short-machine-readable-tag"]}`;
-const runtime = { apiAvailable: false, configured: false, model: "", statusLoaded: false };
+const API_BASE_URL = String(window.HUMANLY_CONFIG?.apiBaseUrl || "").replace(/\/+$/, "");
+const runtime = { apiAvailable: false, configured: false, model: "", provider: "", statusLoaded: false };
+const LIVE_PROVIDERS = new Set(["openrouter", "bothub"]);
+
+function apiUrl(path) { return `${API_BASE_URL}${path}`; }
+
+function isLiveProvider(provider) { return LIVE_PROVIDERS.has(provider); }
+
+function liveProviderLabel(provider = runtime.provider) {
+  const providerName = provider === "bothub" ? "BotHub" : provider === "openrouter" ? "OpenRouter" : "AI";
+  return `AI Live · ${providerName}${runtime.model ? ` / ${runtime.model}` : ""}`;
+}
 
 const purposeLabels = {
   enps: "eNPS / вовлечённость",
@@ -539,7 +550,7 @@ async function generateWithProvider(context, fallbackDraft) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
   try {
-    const response = await fetch("/api/generate", {
+    const response = await fetch(apiUrl("/api/generate"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(context),
@@ -554,8 +565,8 @@ async function generateWithProvider(context, fallbackDraft) {
       body: result.body.trim(),
       tone: toneLabels[result.tone] ? result.tone : fallbackDraft.tone,
       tags: Array.isArray(result.tags) ? result.tags.slice(0, 6) : [],
-      generatedBy: "openrouter",
-      provider: "openrouter",
+      generatedBy: result.provider || "live",
+      provider: result.provider || "live",
       providerModel: result.model || runtime.model,
       generationStatus: "live",
       prompt: buildLivePromptPreview(context)
@@ -569,16 +580,18 @@ async function generateWithProvider(context, fallbackDraft) {
 
 async function refreshProviderStatus() {
   try {
-    const response = await fetch("/api/status", { cache: "no-store" });
+    const response = await fetch(apiUrl("/api/status"), { cache: "no-store" });
     if (!response.ok) throw new Error("status_unavailable");
     const result = await response.json();
     runtime.apiAvailable = true;
     runtime.configured = Boolean(result.configured);
     runtime.model = result.model || "";
+    runtime.provider = result.provider || "";
   } catch {
     runtime.apiAvailable = false;
     runtime.configured = false;
     runtime.model = "";
+    runtime.provider = "";
   } finally {
     runtime.statusLoaded = true;
     if (ui.view === "detail") render();
@@ -588,7 +601,7 @@ async function refreshProviderStatus() {
 function providerInfo(request) {
   const drafts = getDrafts(request.id);
   if (drafts.some((draft) => draft.generationStatus === "generating")) return { label: "Создаём сообщение…", className: "provider-pending" };
-  if (drafts.some((draft) => draft.provider === "openrouter")) return { label: `AI Live · ${runtime.model || "OpenRouter"}`, className: "provider-live" };
+  if (drafts.some((draft) => isLiveProvider(draft.provider))) return { label: liveProviderLabel(drafts.find((draft) => isLiveProvider(draft.provider))?.provider), className: "provider-live" };
   return { label: "Demo mode · offline-ready", className: "provider-demo" };
 }
 
@@ -694,7 +707,7 @@ async function generateFollowUpForRequest(requestId) {
   persistState();
   processAutomation();
   render();
-  toast(result.provider === "openrouter" ? "Follow-up создан через Live AI" : "Live AI недоступен — использован Demo fallback", result.provider === "openrouter" ? "success" : "warning");
+  toast(isLiveProvider(result.provider) ? "Follow-up создан через Live AI" : "Live AI недоступен — использован Demo fallback", isLiveProvider(result.provider) ? "success" : "warning");
 }
 
 function render() {
@@ -862,7 +875,7 @@ function renderEmailCard(draft, request) {
   const sent = draft.status === "sent";
   const archived = draft.status === "archived";
   const generating = draft.generationStatus === "generating";
-  const providerLabel = generating ? "Создаём персональное сообщение…" : draft.provider === "openrouter" ? `AI Live · ${runtime.model || "OpenRouter"}` : draft.provider === "pending" ? "Готовится перед отправкой" : "Demo fallback · offline-ready";
+  const providerLabel = generating ? "Создаём персональное сообщение…" : isLiveProvider(draft.provider) ? liveProviderLabel(draft.provider) : draft.provider === "pending" ? "Готовится перед отправкой" : "Demo fallback · offline-ready";
   const statusLabel = generating ? "Generating" : sent ? "Sent" : archived ? "Archived" : draft.status === "scheduled" ? "Scheduled" : "Draft";
   const body = generating ? "Создаём персональное сообщение с учётом предыдущей коммуникации…" : draft.body;
   return `<article class="email-card"><div class="email-card-top"><div class="email-card-title"><span class="email-icon">✉</span><div><strong>${draft.type === "initial" ? "Первое письмо" : "Мягкое напоминание"}</strong><span>${toneLabels[draft.tone]} · ${sent ? "отправлено" : archived ? "архивировано" : draft.status === "scheduled" ? "будет создано перед отправкой" : "готово к отправке"}</span></div></div><div class="email-actions"><span class="meta-chip">${statusLabel}</span><button class="ghost-button small-button" data-action="copy-email" data-draft-id="${draft.id}">Копировать</button><button class="ghost-button small-button" data-action="open-prompt" data-draft-id="${draft.id}">Промпт</button></div></div><div class="email-subject">${escapeHtml(generating ? "Персонализируем тему…" : draft.subject)}</div><div class="email-body">${escapeHtml(body)}</div><div class="email-footer"><span class="local-generator"><i></i> ${escapeHtml(providerLabel)}</span><span>${sent ? "Коммуникация в пути" : archived ? "Больше не отправится" : draft.status === "scheduled" ? "Будет сгенерировано при наступлении follow-up" : "Можно перегенерировать"}</span></div></article>`;
@@ -1066,7 +1079,7 @@ async function launchRequest() {
   ui.promptDraftId = null;
   ui.isLaunching = false;
   render();
-  toast(initialDraft.provider === "openrouter" ? `Коммуникация для ${employee.fullName} запущена через Live AI` : `Коммуникация для ${employee.fullName} запущена в Demo fallback`, initialDraft.provider === "openrouter" ? "success" : "warning");
+  toast(isLiveProvider(initialDraft.provider) ? `Коммуникация для ${employee.fullName} запущена через Live AI` : `Коммуникация для ${employee.fullName} запущена в Demo fallback`, isLiveProvider(initialDraft.provider) ? "success" : "warning");
 }
 
 function advanceTime(days) {

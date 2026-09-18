@@ -1,0 +1,51 @@
+openapi: "3.0.0"
+info:
+  version: "1.0.0"
+  title: ХьюманЛИ Live AI API
+
+x-yc-apigateway:
+  service_account_id: ajemki56dhdmtjegf8ic
+  cors:
+    origin:
+      - https://spnkd.github.io
+      - http://localhost:4173
+      - http://127.0.0.1:4173
+    methods:
+      - GET
+      - POST
+      - OPTIONS
+    allowedHeaders:
+      - Content-Type
+    maxAge: 3600
+    optionsSuccessStatus: 204
+
+paths:
+  /api/status:
+    get:
+      operationId: status
+      responses:
+        "200":
+          description: Provider status
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4erpgl9e0f54mc0nd80
+        payload_format_version: "1.0"
+
+  /api/generate:
+    post:
+      operationId: generate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Structured HR message
+        "502":
+          description: Provider unavailable
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4erpgl9e0f54mc0nd80
+        payload_format_version: "1.0"
