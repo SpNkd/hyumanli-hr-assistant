@@ -1,49 +1,33 @@
 # Product
 
+## Positioning
+
+**ХьюманЛИ — ассистент полного цикла для HR-коммуникаций, который персонализирует сообщения, выбирает уместное время и следующий шаг, отслеживает реакцию сотрудника и понимает, когда автоматизацию нужно остановить и передать разговор человеку.**
+
 ## Problem
 
-HR вручную пишет feedback-письма, ставит напоминания, проверяет ответы и очищает календарь. Коммуникация получается холодной, а follow-up легко отправить не вовремя.
+HR вручную пишет feedback-письма, ставит напоминания, проверяет ответы и очищает календарь. Коммуникация получается холодной, follow-up легко отправить не вовремя, а граница между автоматизацией и человеческим разговором остаётся неявной.
 
-## Target user
+## Core workflow
 
-Основной пользователь — HR manager / People Partner. Сотрудник получает короткую, уважительную коммуникацию без обязательного аккаунта.
+HR открывает Communication Inbox → выбирает кейс → ХьюманЛИ формирует decision до текста → учитывает Communication Memory → выбирает безопасное время и канал → генерирует письмо → запускает Communication Check → ждёт реакцию → закрывает цикл или передаёт его человеку.
 
-## Current workflow
+## Product layers
 
-HR формулирует письмо → создаёт напоминание → вручную проверяет ответы → пишет follow-up → удаляет лишние события после ответа.
+- **Communication Inbox:** активные кейсы, summary, статусы, последнее и следующее действие, канал, риск, фильтр и сортировка.
+- **Decision Engine:** deterministic action, sendAt, tone, priority, escalation, reason codes и человеческое объяснение.
+- **Communication Memory:** derived/demo/local context сотрудника — стиль, типичный response time, успешное окно, темы и история касаний.
+- **Communication Check:** краткость, уважительный tone, повторы, допустимое время, частота касаний и sensitive-topic review.
+- **Human-in-the-loop policy:** Автопилот, Проверка перед отправкой, Только рекомендации.
+- **Campaigns:** лёгкое объединение нескольких персональных workflows вокруг одной HR-задачи.
+- **Analytics:** response rate, average response time, first-touch response, follow-up response, escalation rate, tone и send window.
 
-## Proposed workflow
+## MVP boundaries
 
-HR выбирает сотрудника, цель, дедлайн и тон → запускает один клик → Humanly генерирует письма, планирует три точки с учётом рабочего времени, мягко напоминает и архивирует будущие шаги после ответа.
+В scope: один local-first HR workspace, synthetic employees, Live AI/DemoProvider, scheduling rules, simulated response, local persistence, campaign aggregates and derived metrics.
 
-## Core value proposition
-
-Humanly освобождает HR от операционного контроля, сохраняя человеческий тон и уважение к времени сотрудника.
-
-## Solution Summary
-
-- **Проблема:** feedback-цикл требует много ручных действий и часто звучит формально.
-- **Пользователь:** HR manager / People Partner.
-- **Решение:** автономный browser-first ассистент коммуникаций.
-- **Основной workflow:** select employee → choose purpose/tone → launch → email + follow-up + timeline → response or personal-contact recommendation.
-- **MVP:** dashboard, employee context, request creation, local text generation, timeline, scheduling rules, response simulation, time simulation, persistence.
-- **WOW features:** one-click launch, auto-archive after response, weekend/quiet-hours shift, prompt preview, tone gallery.
-- **Технический подход:** static-first SPA, localStorage, deterministic generator and state engine.
-- **Главные риски:** локальная дата/время браузера, отсутствие реальной отправки, необходимость позже подключить permissions и серверный audit trail.
-
-## Key features
-
-- активные запросы и статусная сводка;
-- история сотрудника и history-aware тексты;
-- первое письмо и follow-up в разных тонах;
-- timeline из трёх событий с badge сдвига;
-- симуляция ответа и no-response path;
-- настройки рабочего времени, экспорт `.ics`, копирование текста и prompt.
-
-## Out of scope
-
-Реальная отправка email, Google/Outlook OAuth, backend, authentication, multi-tenant setup, production security и реальная LLM-интеграция.
+За границами: real email/calendar delivery, OAuth, backend database, authentication, multi-tenant, enterprise RBAC, production PII, complex ML, vector database и compliance claims.
 
 ## Success criteria
 
-За две минуты зритель видит: один клик создаёт уважительные письма и план; выходные и тихие часы учитываются; ответ сотрудника автоматически закрывает будущие напоминания; если ответа нет, появляется follow-up и рекомендация для HR.
+За 2–3 минуты зритель видит весь контур: Inbox → память Дмитрия → объяснимое решение → Live AI/Demo fallback → Communication Check → follow-up → ответ → архивирование → human escalation для Игоря.

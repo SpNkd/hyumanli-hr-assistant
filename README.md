@@ -1,10 +1,10 @@
-# Humanly — HR Communication Assistant
+# ХьюманЛИ — человечная автоматизация HR-коммуникаций
 
-Humanly помогает HR запускать бережные feedback-коммуникации в один клик: генерирует первое письмо и follow-up через OpenRouter/Qwen, а при любой проблеме автоматически переключается на локальный DemoProvider. Продукт строит timeline, учитывает рабочее время и закрывает будущие напоминания после ответа сотрудника.
+ХьюманЛИ — ассистент полного цикла для HR-коммуникаций: персонализирует сообщения, выбирает уместное время и следующий шаг, отслеживает реакцию сотрудника и понимает, когда автоматизацию нужно остановить и передать разговор человеку.
 
 ## Запуск
 
-Для полностью автономного demo откройте [`index.html`](./index.html) в браузере — backend и ключ не нужны, используется DemoProvider.
+Для автономного demo откройте [`index.html`](./index.html) в браузере. Backend и ключ не нужны: используется deterministic DemoProvider.
 
 Для Live AI запустите локальный proxy:
 
@@ -18,23 +18,32 @@ node server.js
 
 ## Главный demo-сценарий
 
-1. На Overview нажмите **Запустить коммуникацию**: demo defaults уже выбраны.
-2. Нажмите submit: первое письмо генерируется через Live AI или Demo fallback, появятся письмо follow-up и три контрольные точки.
-3. Откройте Prompt preview, затем Timeline и покажите сдвиг follow-up с выходного.
-4. Нажмите **+3д**, затем **+1д** и ещё раз **+1д** — перед отправкой follow-up будет заново сгенерирован с учётом первого письма.
-5. Нажмите **Симулировать ответ** — будущие события архивируются автоматически.
+1. Откройте **Коммуникации**: это inbox с активными кейсами, ближайшими действиями и зонами внимания.
+2. Откройте Дмитрия и покажите **Коммуникационный профиль** и **Почему так?**.
+3. Запустите новую коммуникацию: первое письмо создаётся через Live AI или Demo fallback.
+4. В Prompt preview видно history-aware context и memory-guidance; Communication check показывает готовность текста.
+5. Нажмите `+3д`, затем два раза `+1д`: follow-up генерируется перед отправкой и учитывает первое письмо.
+6. Симулируйте ответ: будущие события автоматически архивируются. Игорь показывает границу автоматизации.
 
-Полный сценарий, защита по кликам, структура презентации и вопросы жюри находятся в [`docs/DEFENSE.md`](./docs/DEFENSE.md) и [`docs/DEMO.md`](./docs/DEMO.md).
+Полный v2-сценарий на 2–3 минуты и вопросы жюри находятся в [`docs/DEFENSE.md`](./docs/DEFENSE.md).
 
-## Как устроено
+## Что внутри
 
 - vanilla HTML/CSS/JavaScript, без runtime-зависимостей;
-- demo data и состояние хранятся в `localStorage` под ключом `hr-assistant-state-v2`;
+- Communication Inbox: summary, фильтры, сортировка, канал, последнее/следующее действие и риск;
+- deterministic Decision Engine: action, timing, tone, escalation, reason codes и human explanation;
+- derived Communication Memory сотрудников: стиль, response time, окно отправки, темы и история касаний;
+- deterministic/hybrid Communication Check перед отправкой;
+- automation policy: Автопилот, Проверка перед отправкой, Только рекомендации;
+- sensitive topics требуют подтверждения HR;
+- лёгкие локальные Campaigns и полезная Analytics без BI-шума;
+- state и synthetic data хранятся в `localStorage` под ключом `hr-assistant-state-v2`;
 - `MessageGenerator` использует `OpenRouterProvider` → Qwen и автоматически откатывается к `DemoProvider`;
-- API key читается только локальным `server.js` из игнорируемого `.env` и никогда не попадает во frontend bundle/localStorage;
-- structured JSON response валидируется на proxy; timeout/network/API/invalid JSON дают обычный Demo fallback;
-- Prompt preview показывает system instructions, минимальный employee/request context и предыдущую коммуникацию, но не секреты;
-- time simulation позволяет показать follow-up и escalation без ожидания реального времени;
+- API key читается только `server.js` из игнорируемого `.env` и не попадает во frontend/localStorage;
 - `.ics` timeline можно скачать из браузера.
+
+## Границы MVP
+
+В проекте намеренно нет реальной отправки email, Google/Outlook OAuth, backend database, authentication, multi-tenant setup, enterprise RBAC или production compliance. Следующий production-слой — server-side storage, permissions, audit trail и channel adapters.
 
 Документация: [`PRODUCT.md`](./docs/PRODUCT.md), [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md), [`DATA_MODEL.md`](./docs/DATA_MODEL.md), [`DECISIONS.md`](./docs/DECISIONS.md), [`DEMO.md`](./docs/DEMO.md), [`PITCH.md`](./docs/PITCH.md), [`DEFENSE.md`](./docs/DEFENSE.md).

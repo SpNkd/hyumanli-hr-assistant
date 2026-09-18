@@ -32,7 +32,7 @@ const server = http.createServer(async (request, response) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Humanly local server listening on http://localhost:${PORT}`);
+  console.log(`ХьюманЛИ local server listening on http://localhost:${PORT}`);
 });
 
 async function handleGenerate(request, response) {
@@ -51,7 +51,7 @@ async function handleGenerate(request, response) {
           "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
           "HTTP-Referer": "http://localhost",
-          "X-Title": "Humanly HR Communication Assistant"
+          "X-Title": "ХьюманЛИ HR Communication Workspace"
         },
         body: JSON.stringify({
           model: OPENROUTER_MODEL,

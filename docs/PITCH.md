@@ -2,58 +2,40 @@
 
 ## 1. Problem
 
-HR хочет собирать честную обратную связь, но тратит время на ручные письма, напоминания, календарь и контроль ответов. В итоге сообщения становятся формальными, а часть follow-up приходит не вовремя.
+HR тратит время на ручные письма, reminders, проверку ответов и cleanup. Формальный текст и неуместное время снижают шанс получить честный feedback.
 
-## 2. Current workflow
+## 2. Positioning
 
-Написать письмо → поставить reminder → проверить inbox → написать follow-up → определить, кому позвонить → удалить лишние события после ответа.
+**ХьюманЛИ — ассистент полного цикла для HR-коммуникаций, который персонализирует сообщения, выбирает уместное время и следующий шаг, отслеживает реакцию сотрудника и понимает, когда автоматизацию нужно остановить и передать разговор человеку.**
 
-## 3. Proposed solution
+## 3. Product
 
-Humanly — browser-first HR communication assistant. HR выбирает сотрудника и цель, а ассистент генерирует короткую коммуникацию через Live AI, планирует её в рабочее время, учитывает историю, мягко напоминает и сам закрывает будущие шаги. Если Live AI недоступен, flow продолжает работать через DemoProvider.
+Это не генератор писем, а Communication Inbox: кейсы, Decision Engine, Communication Memory, Communication Check, policies, Campaigns и useful Analytics в одном local-first workspace.
 
-## 4. Product demo
+## 4. Demo
 
-В демо мы запускаем eNPS для Дмитрия Ковалёва одной кнопкой, показываем два письма и timeline, переводим demo clock через субботу на понедельник, видим follow-up и затем симулируем ответ. Все будущие события архивируются мгновенно.
+Открываем Inbox, смотрим состояние команды, открываем Дмитрия, показываем memory и `Почему так?`, запускаем eNPS, видим Live AI/Demo fallback, проводим время до follow-up, симулируем ответ и затем показываем Игоря, которому нужен личный контакт.
 
-## 5. Key features
+## 5. Architecture
 
-- one-click launch;
-- context-aware local text generation;
-- quiet-hours and weekend safety;
-- time simulation;
-- response cleanup;
-- personal-contact recommendation;
-- prompt preview and `.ics` export.
+Static-first SPA + localStorage. Decision Engine выбирает action/timing/policy, MessageGenerator формирует wording через OpenRouterProvider → Qwen или DemoProvider, Communication Check проверяет результат. Browser никогда не получает OpenRouter key.
 
-## 6. Architecture
+## 6. Business effect
 
-Static SPA with an optional local Node.js proxy. `MessageGenerator` chooses `OpenRouterProvider` → Qwen when available and automatically falls back to deterministic `DemoProvider` on timeout, network/API error or invalid JSON. The browser never receives the OpenRouter key; localStorage provides persistence.
+HR видит следующий шаг сразу; сотрудник получает короткое и своевременное обращение; repeated non-response не превращается в бесконечный spam.
 
-## 7. Data model
+## 7. Why this approach
 
-Employee → FeedbackRequest → EmailDraft / CalendarEvent → Response. Events retain original and adjusted time so the UI can explain every scheduling decision.
+Мы добавили продуктовую глубину без инфраструктурного риска: deterministic rules объяснимы, memory derived и локальна, Campaigns и Analytics не создают вторую базу данных, а Live AI остаётся enhancement, not runtime dependency.
 
-## 8. Business effect
+## 8. What comes next
 
-HR экономит операционное время и видит следующий шаг сразу; сотрудник получает короткое, своевременное и уважительное обращение; repeated non-response переводится в человеческий канал вместо бесконечных автоматических писем.
-
-## 9. Why this approach
-
-За ограниченное время важнее надёжный end-to-end сценарий, чем сложная инфраструктура. Static-first даёт мгновенный запуск, а optional proxy и automatic fallback позволяют показать Live AI, не превращая сеть или ключ в runtime dependency.
-
-## 10. What we would build next
-
-Реальный email/calendar adapter с audit trail, permissions, consent/opt-out, server-side storage, LLM provider abstraction, delivery analytics and integrations with Slack/Telegram.
-
-## Defense materials
-
-Финальный сценарий по кликам, 6-слайдовая структура, пять ключевых состояний, архитектурное обоснование, 10 вопросов жюри и pre-defense checklist находятся в [`DEFENSE.md`](./DEFENSE.md).
+Real email/calendar adapters, authentication, permissions, server-side audit trail, consent/opt-out, delivery analytics и integrations — только после подтверждения core workflow.
 
 ## 30-second pitch
 
-Humanly — это цифровой ассистент для HR-коммуникаций. HR выбирает сотрудника и цель, нажимает одну кнопку, а Humanly сам пишет по-человечески, планирует письмо в рабочее время, мягко напоминает и архивирует будущие шаги, когда сотрудник ответил. Так HR занимается разговором с людьми, а не ручным контролем дедлайнов.
+ХьюманЛИ — это человечная автоматизация HR-коммуникаций. HR открывает inbox и сразу видит, где нужен ответ, follow-up или личный контакт. ХьюманЛИ учитывает коммуникационную память сотрудника, выбирает следующий шаг и объясняет его до генерации текста. Live AI пишет естественно, DemoProvider страхует demo, а после ответа будущие действия закрываются автоматически. Это workspace, который автоматизирует коммуникацию, но понимает границы автоматизации.
 
-## 2-minute demo script
+## Defense materials
 
-«На Overview HR видит все активные коммуникации: кто ждёт ответа, кто уже ответил и где нужен личный контакт. Запустим eNPS для Дмитрия Ковалёва. Выбираю его профиль, поддерживающий тон и нажимаю Launch — первое письмо создаётся через Live AI, а рядом остаётся Demo fallback. В письме нет бюрократических формулировок: есть контекст, две минуты на ответ и возможность выбрать другой формат. В Prompt preview видно, что генератор учитывает роль, историю и предпочтение коротких сообщений. Follow-up изначально попадает на субботу, поэтому система переносит его на понедельник, 10:00, и объясняет это badge. Нажимаю +3 дня, затем ещё два раза +1 день — перед отправкой Live AI получает первое письмо и создаёт продолжение без повторения формулировок. Теперь симулируем ответ сотрудника: статус становится Responded, а follow-up и escalation автоматически архивируются. Для Игоря, который часто игнорирует массовые письма, Humanly не спамит бесконечно — он показывает, что лучше перейти к личному контакту. Если сеть недоступна, тот же flow проходит через DemoProvider. Это и есть zero-click HR: одно действие, больше заботы, меньше администрирования.»
+Сценарий по кликам, структура слайдов, пять ключевых состояний, архитектурное обоснование, jury Q&A и checklist находятся в [`DEFENSE.md`](./DEFENSE.md).

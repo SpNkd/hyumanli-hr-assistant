@@ -71,3 +71,43 @@ Why:
 Alternatives rejected:
 
 Оставлять события активными и только менять статус запроса — создаёт риск повторных напоминаний.
+
+### ADR-5: Decision Engine before LLM
+
+Decision:
+
+Действие, канал, время, escalation и объяснение выбираются deterministic rules до генерации текста.
+
+Why:
+
+Так timing и safety воспроизводимы, проверяемы и не зависят от вариативности LLM. LLM отвечает только за естественное wording.
+
+### ADR-6: Derived Communication Memory
+
+Decision:
+
+Communication Memory вычисляется из synthetic history, events и responses в local state.
+
+Why:
+
+HR получает полезный контекст без отдельного ML-профиля и без surveillance-claims. Memory влияет на tone, prompt context и explanation.
+
+### ADR-7: Human-in-the-loop policies
+
+Decision:
+
+Поддерживаются `autopilot`, `review` и `recommendation`; sensitive topics требуют approval независимо от режима.
+
+Why:
+
+Одна и та же automation engine может работать с разной терпимостью к автоматическим действиям, сохраняя прозрачность и локальную управляемость.
+
+### ADR-8: Lightweight campaigns and derived analytics
+
+Decision:
+
+Campaign объединяет request IDs, а metrics считаются из requests/responses/events на лету.
+
+Why:
+
+Это даёт HR workspace-ощущение без bulk backend, BI-инфраструктуры и дублирования источника истины.
