@@ -40,6 +40,7 @@ const ui = {
   view: "dashboard",
   selectedRequestId: null,
   detailTab: "drafts",
+  promptDraftId: null,
   query: "",
   requestFilter: "all",
   newForm: {
@@ -417,7 +418,7 @@ function renderDashboard() {
   const activeMarkup = active.length ? active.slice(0, 4).map(renderDashboardRequestRow).join("") : emptyState("Нет активных коммуникаций", "Запустите первую — и ассистент соберёт весь цикл.");
   const attentionRequests = state.requests.filter((request) => request.status === "needs_manual_contact" || request.priority === "high").slice(0, 3);
   return `<div class="page-intro">
-    <div><div class="eyebrow">Wednesday, September 16 · 10:00</div><h1>Доброе утро, Анна</h1><p>Коммуникации, которые помогают людям отвечать вовремя — и чувствовать себя услышанными.</p></div>
+    <div><div class="eyebrow">${escapeHtml(formatLongDate(state.demoNow))} · ${formatTime(state.demoNow)}</div><h1>Доброе утро, Анна</h1><p>Коммуникации, которые помогают людям отвечать вовремя — и чувствовать себя услышанными.</p></div>
     <div class="date-label">Сегодня в работе<strong>${active.length} активных коммуникаций</strong></div>
   </div>
   <div class="hero-grid">
@@ -463,7 +464,7 @@ function renderRequests() {
 function renderRequestTableRow(request) {
   const employee = getEmployee(request.employeeId);
   const next = getNextEvent(request);
-  return `<div class="table-row"><div><span class="table-cell-label">Сотрудник</span><div class="request-person"><div class="avatar ${employee.avatarClass}">${initials(employee.fullName)}</div><div class="person-copy"><strong>${escapeHtml(employee.fullName)}</strong><span>${escapeHtml(employee.role)}</span></div></div></div><div><span class="table-cell-label">Цель</span><span class="request-purpose"><strong>${escapeHtml(purposeLabel(request))}</strong></span></div><div><span class="table-cell-label">Следующий шаг</span><span class="request-due"><strong>${next ? formatDate(next.scheduledAt) : "—"}</strong><span>${next ? escapeHtml(next.title) : "Цикл завершён"}</span></span></div><div><span class="table-cell-label">Статус</span><span class="status-badge ${statusClass(request.status)}">${statusLabels[request.status]}</span></div><div><span class="table-cell-label">Дедлайн</span><span class="request-due"><strong>${formatDate(request.deadlineDate)}</strong><span>${request.priority === "high" ? "Высокий" : "Обычный"}</span></span></div><div class="row-actions"><button class="icon-button" data-action="open-request" data-request-id="${request.id}" title="Открыть">↗</button>${request.status !== "responded" && request.status !== "archived" ? `<button class="icon-button" data-action="open-response" data-request-id="${request.id}" title="Симулировать ответ">✓</button>` : ""}</div></div>`;
+  return `<div class="table-row"><div><span class="table-cell-label">Сотрудник</span><div class="request-person"><div class="avatar ${employee.avatarClass}">${initials(employee.fullName)}</div><div class="person-copy"><strong>${escapeHtml(employee.fullName)}</strong><span>${escapeHtml(employee.role)}</span></div></div></div><div><span class="table-cell-label">Цель</span><span class="request-purpose"><strong>${escapeHtml(purposeLabel(request))}</strong></span></div><div><span class="table-cell-label">Следующий шаг</span><span class="request-due"><strong>${next ? formatDate(next.scheduledAt) : "—"}</strong><span>${next ? escapeHtml(next.title) : "Цикл завершён"}</span></span></div><div><span class="table-cell-label">Статус</span><span class="status-badge ${statusClass(request.status)}">${statusLabels[request.status]}</span></div><div><span class="table-cell-label">Дедлайн</span><span class="request-due"><strong>${formatDate(request.deadlineDate)}</strong><span>${request.priority === "high" ? "Высокий" : "Обычный"}</span></span></div><div class="row-actions"><button class="icon-button" data-action="open-request" data-request-id="${request.id}" title="Открыть" aria-label="Открыть коммуникацию">↗</button>${request.status !== "responded" && request.status !== "archived" ? `<button class="icon-button" data-action="open-response" data-request-id="${request.id}" title="Симулировать ответ" aria-label="Симулировать ответ">✓</button>` : ""}</div></div>`;
 }
 
 function renderNewRequest() {
@@ -482,6 +483,8 @@ function renderDetail(requestId) {
   const employee = getEmployee(request.employeeId);
   const response = getResponse(request.id);
   const tab = ui.detailTab;
+  const requestDrafts = getDrafts(request.id);
+  if (tab === "prompt" && !requestDrafts.some((draft) => draft.id === ui.promptDraftId)) ui.promptDraftId = requestDrafts[0]?.id || null;
   return `<div class="detail-header"><button class="back-link" data-view="requests">← Все коммуникации</button><div class="detail-title-row"><div class="detail-title"><div class="avatar ${employee.avatarClass}">${initials(employee.fullName)}</div><div><h1>${escapeHtml(purposeLabel(request))}</h1><p>${escapeHtml(employee.fullName)} · ${escapeHtml(employee.role)} · создано ${formatDate(request.createdAt)}</p></div></div><div class="detail-actions">${!response && request.status !== "archived" ? `<button class="secondary-button small-button" data-action="open-response" data-request-id="${request.id}">Симулировать ответ</button>` : ""}<button class="ghost-button small-button" data-action="archive-request" data-request-id="${request.id}">Архивировать</button></div></div><div class="detail-metadata"><span class="status-badge ${statusClass(request.status)}">${statusLabels[request.status]}</span><span class="meta-chip">Тон <strong>${toneLabels[request.tone]}</strong></span><span class="meta-chip">Дедлайн <strong>${formatDate(request.deadlineDate)}</strong></span><span class="meta-chip">Приоритет <strong>${request.priority === "high" ? "Высокий" : "Обычный"}</strong></span>${response ? `<span class="meta-chip">Ответ <strong>${formatDateTime(response.respondedAt)}</strong></span>` : ""}</div></div><div class="detail-layout"><div class="detail-main-panel"><div class="tabs"><button class="tab ${tab === "drafts" ? "active" : ""}" data-detail-tab="drafts">Письма</button><button class="tab ${tab === "timeline" ? "active" : ""}" data-detail-tab="timeline">Timeline</button><button class="tab ${tab === "history" ? "active" : ""}" data-detail-tab="history">История</button><button class="tab ${tab === "prompt" ? "active" : ""}" data-detail-tab="prompt">Prompt preview</button></div>${renderDetailTab(request, employee, tab)}</div><aside class="detail-side-sticky">${renderDetailSide(request, employee)}</aside></div>`;
 }
 
@@ -517,7 +520,8 @@ function renderTimelineEvent(event) {
 
 function renderPromptTab(request) {
   const drafts = getDrafts(request.id);
-  return `<section class="panel timeline-panel"><div class="section-heading"><div><h2>Prompt preview</h2><p>Такой контекст можно передать LLM-адаптеру без изменения UX.</p></div><button class="ghost-button small-button" data-action="copy-prompt" data-draft-id="${drafts[0]?.id || ""}">Копировать prompt</button></div><div class="modal-tabs"><button class="${drafts[0]?.type === "initial" ? "active" : ""}" data-action="select-prompt-tab" data-draft-id="${drafts[0]?.id || ""}">Первое письмо</button><button data-action="select-prompt-tab" data-draft-id="${drafts[1]?.id || ""}">Follow-up</button></div><div class="prompt-block">${escapeHtml(drafts[0]?.prompt || "Нет prompt preview")}</div></section>`;
+  const selected = drafts.find((draft) => draft.id === ui.promptDraftId) || drafts[0];
+  return `<section class="panel timeline-panel"><div class="section-heading"><div><h2>Prompt preview</h2><p>Такой контекст можно передать LLM-адаптеру без изменения UX.</p></div><button class="ghost-button small-button" data-action="copy-prompt" data-draft-id="${selected?.id || ""}">Копировать prompt</button></div><div class="modal-tabs"><button class="${selected?.type === "initial" ? "active" : ""}" data-action="select-prompt-tab" data-draft-id="${drafts[0]?.id || ""}">Первое письмо</button><button class="${selected?.type === "follow_up" ? "active" : ""}" data-action="select-prompt-tab" data-draft-id="${drafts[1]?.id || ""}">Follow-up</button></div><div class="prompt-block">${escapeHtml(selected?.prompt || "Нет prompt preview")}</div></section>`;
 }
 
 function renderDetailSide(request, employee) {
@@ -593,7 +597,7 @@ function handleSubmit(event) {
 
 function navigate(view, requestId = null) {
   ui.view = view;
-  if (view === "detail") { ui.selectedRequestId = requestId; ui.detailTab = "drafts"; }
+  if (view === "detail") { ui.selectedRequestId = requestId; ui.detailTab = "drafts"; ui.promptDraftId = null; }
   if (view !== "detail") ui.selectedRequestId = null;
   document.getElementById("sidebar").classList.remove("open");
   render();
@@ -690,8 +694,7 @@ function openVariantsModal(requestId) {
 
 function showPromptInDetail(draftId) {
   const draft = state.drafts.find((item) => item.id === draftId); if (!draft) return;
-  ui.detailTab = "prompt"; render();
-  const prompt = document.querySelector(".prompt-block"); if (prompt) prompt.textContent = draft.prompt;
+  ui.promptDraftId = draftId; ui.detailTab = "prompt"; render();
 }
 
 function closeModal() { document.getElementById("modalBackdrop").hidden = true; document.getElementById("modal").innerHTML = ""; }
