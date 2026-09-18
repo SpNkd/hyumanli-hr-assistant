@@ -2,7 +2,8 @@
 
 ## Public demo · 2026-09-18
 
-- Source commit: `010322f795a1ce894f6e1e81e7c11d6927c590bb`
+- Source commit: `0878e4b734cee585471be53ae6a44759e4414edd`
+- Application release commit: `010322f795a1ce894f6e1e81e7c11d6927c590bb`
 - Static frontend: [GitHub Pages](https://spnkd.github.io/hyumanli-hr-assistant/)
 - Pages workflow: [Deploy ХьюманЛИ to GitHub Pages](https://github.com/SpNkd/hyumanli-hr-assistant/actions/runs/35337364155)
 - API Gateway: `https://d5dk89ppio7pjn77uh2g.7qsg961h.apigw.yandexcloud.net`
