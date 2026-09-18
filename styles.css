@@ -25,14 +25,14 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; background: var(--bg); }
-body { margin: 0; color: var(--ink); background: var(--bg); font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45; }
+html { min-width: 320px; height: 100%; background: var(--bg); }
+body { height: 100%; margin: 0; overflow: hidden; color: var(--ink); background: var(--bg); font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(20, 156, 145, .22); outline-offset: 2px; }
 
-.app-shell { min-height: 100vh; display: flex; }
-.sidebar { width: 252px; flex: 0 0 252px; background: #fbfcfe; border-right: 1px solid var(--line); padding: 26px 16px 18px; display: flex; flex-direction: column; min-height: 100vh; }
+.app-shell { height: 100vh; min-height: 100vh; display: flex; }
+.sidebar { width: 252px; height: 100vh; flex: 0 0 252px; background: #fbfcfe; border-right: 1px solid var(--line); padding: 26px 16px 18px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .brand-lockup { display: flex; align-items: center; gap: 11px; padding: 0 12px 34px; }
 .brand-mark { width: 29px; height: 29px; border: 2px solid var(--teal); border-radius: 10px 10px 10px 4px; display: flex; align-items: flex-end; justify-content: center; gap: 3px; padding: 7px 5px; transform: rotate(-8deg); background: var(--teal-soft); }
 .brand-mark span { display: block; width: 4px; border-radius: 5px; background: var(--teal); transform: rotate(8deg); }
@@ -60,7 +60,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .profile-chip div:nth-child(2) span { color: var(--muted); font-size: 10px; margin-top: 2px; }
 .profile-more { margin-left: auto; color: #9eabb8; letter-spacing: 2px; }
 
-.main-area { flex: 1; min-width: 0; }
+.main-area { height: 100vh; min-height: 0; flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 .topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; padding: 0 42px; border-bottom: 1px solid var(--line); background: rgba(251, 252, 254, .82); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 5; }
 .breadcrumbs { display: flex; align-items: center; gap: 10px; color: #97a4b3; font-size: 12px; }
 .breadcrumbs strong { color: var(--ink); font-weight: 700; }
@@ -87,7 +87,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .danger-button:hover { background: #ffe1e6; }
 .small-button { min-height: 30px; padding: 0 10px; font-size: 11px; border-radius: 8px; }
 
-.content { max-width: 1450px; margin: 0 auto; padding: 35px 42px 60px; }
+.content { width: 100%; max-width: 1450px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 auto; padding: 35px 42px 60px; }
 .page-intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 28px; }
 .eyebrow { color: var(--teal-dark); text-transform: uppercase; letter-spacing: .12em; font-weight: 800; font-size: 10px; margin-bottom: 9px; }
 h1, h2, h3, h4, p { margin: 0; }

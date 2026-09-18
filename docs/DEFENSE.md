@@ -1,140 +1,171 @@
-# Финальная защита ХьюманЛИ v2
+# Финальная защита ХьюманЛИ
 
-## Demo-flow по кликам — 2–3 минуты
+## Главная мысль
 
-### 0:00–0:20 — Inbox
+**ХьюманЛИ — ассистент полного цикла HR-коммуникаций: знает, кому, когда и как написать — и когда остановиться.**
 
-1. Открыть **ХьюманЛИ**.
-2. Нажать **Коммуникации**.
-3. Показать summary: активные, ожидающие, ответившие, требующие внимания.
+Не начинайте с OpenRouter, Qwen или localStorage. Начинайте с ручного коммуникационного цикла HR, затем показывайте workspace, AI-разделение и human boundary.
 
-Сказать: «Это не список писем, а рабочий inbox HR: здесь сразу видно состояние каждого кейса и ближайшее действие».
+## Demo-flow · 2 минуты
 
-### 0:20–0:45 — Memory Дмитрия
+Полный сценарий с точными кликами и репликами находится в [`DEMO.md`](./DEMO.md). Короткая карта для ведущего:
 
-4. Открыть Дмитрия.
-5. В правой колонке показать **Коммуникационный профиль**.
-6. Нажать **Почему так?**.
+1. **Коммуникации** — показать Inbox и ближайшие действия.
+2. Открыть **Дмитрия** — показать Communication Memory.
+3. Нажать **Почему так?** — показать Decision Engine и Communication Check.
+4. **Новая коммуникация → Запустить коммуникацию** — показать письмо и `AI Live` или `Demo fallback`.
+5. Нажать `+3д`, `+1д`, `+1д` — показать timing и follow-up.
+6. **Симулировать ответ → Ответить и закрыть цикл** — показать auto-close.
+7. Открыть **Игоря** — показать `Нужен личный контакт`.
 
-Показать: короткий стиль, typical response time, окно 10:00–12:00, reason codes и объяснение Decision Engine.
+Не добавляйте Campaigns и Analytics в основной двухминутный flow. Это резервный материал после demo или для вопросов.
 
-Сказать: «Память не оценивает человека. Она помогает выбрать короткий тон и не торопить сотрудника, а decision объясняет следующий шаг до генерации текста».
+## Ровно 4 WOW moments
 
-### 0:45–1:20 — Launch + Live AI + Guard
+### 1. Inbox
 
-7. Нажать **Новая коммуникация**.
-8. Оставить defaults: Дмитрий, eNPS, +5 дней, поддерживающий tone.
-9. Нажать **Запустить коммуникацию**.
-10. Показать письмо и индикатор `AI Live` или `Demo fallback`.
-11. В Decision panel раскрыть **Communication check**.
+**Показываем:** summary, состояние кейсов и `Следующее действие`.
 
-Сказать: «Decision Engine выбрал действие и время, а LLM отвечает только за естественную формулировку. Перед отправкой ХьюманЛИ проверяет краткость, уважительный tone, повторы и допустимость времени».
+**Почему важно:** HR видит не коллекцию писем, а управляемую очередь решений.
 
-### 1:20–1:55 — Follow-up и закрытие
+**Фраза:** «Один экран отвечает на вопрос: что происходит и какой следующий шаг нужен HR?»
 
-12. Нажать `+3д`, затем `+1д`, затем ещё `+1д`.
-13. Дождаться статуса **Follow-up отправлен**.
-14. Нажать **Симулировать ответ → Ответить и закрыть цикл**.
+### 2. Communication Memory
 
-Показать: follow-up сгенерирован перед отправкой, в его prompt есть предыдущий текст; после ответа будущие events становятся **Архивировано**.
+**Показываем:** короткий стиль Дмитрия, response time, успешное окно и темы.
 
-Сказать: «Система продолжает разговор, не повторяя первое письмо. Когда сотрудник ответил, автоматизация сама убирает будущие напоминания».
+**Почему важно:** персонализация основана на предыдущем взаимодействии, а не на подстановке имени.
 
-### 1:55–2:20 — Граница автоматизации
+**Фраза:** «Это коммуникационный контекст, а не психологический профиль сотрудника».
 
-15. Вернуться в **Коммуникации**.
-16. Открыть Игоря.
+### 3. Decision explanation
 
-Показать `Нужен личный контакт`, reason `repeated_non_response` и human explanation.
+**Показываем:** `Почему так?`, reason codes и Communication check.
 
-Сказать: «ХьюманЛИ не превращает automation в бесконечный spam. После повторного молчания он передаёт разговор человеку».
+**Почему важно:** система объясняет действие до текста и проверяет сообщение перед отправкой.
 
-### Если есть ещё 20 секунд
+**Фраза:** «LLM пишет естественно, но не принимает скрытые HR-решения».
 
-17. Открыть **Кампании** и показать `eNPS · Сентябрь`.
-18. Открыть **Аналитика** и показать response rate и manual escalation rate.
+### 4. Human escalation
 
-## Sensitivity Guard proof-point
+**Показываем:** Игоря со статусом `Нужен личный контакт`.
 
-В форме новой коммуникации выбрать `Свой фокус`, ввести «обсудить компенсацию» и запустить. Кейс получит `Нужно подтверждение`; кнопка подтверждения появляется рядом с объяснением. Это показывает, что sensitive topics не уходят в автопилот.
+**Почему важно:** автоматизация имеет границу и не превращается в бесконечный spam.
 
-## Пять лучших состояний
+**Фраза:** «ХьюманЛИ знает не только, когда написать, но и когда перестать писать».
 
-1. **Inbox:** summary и ближайшее действие по всем кейсам.
-2. **Дмитрий — Communication Memory:** короткий стиль, окно ответа, темы.
-3. **Decision + Communication Check:** объяснимое действие и guard перед отправкой.
-4. **Responded / Archived:** ответ закрыл follow-up и escalation.
-5. **Игорь — Human escalation:** repeated non-response передан в личный канал.
+## Screenshot plan
 
-## Структура презентации — 6 слайдов
+Используйте 6 основных скриншотов и 2 резервных. На каждом должен быть виден конкретный proof-point; не вставляйте случайные полные страницы.
 
-### 1. HR должен видеть весь контур
+| № | Экран и состояние | Что доказать | Crop / убрать | Слайд |
+|---|---|---|---|---|
+| 1 | Communication Inbox, seed state | Workspace и следующий шаг | Центральная область с summary и 3–4 строками; не показывать длинный нижний scroll | 2 |
+| 2 | Дмитрий, detail + Communication Profile | Память и персональный контекст | Кроп от Decision panel до правой карточки профиля | 3 |
+| 3 | Дмитрий, раскрыто `Почему так?` | Decision Engine + guard | Оставить reason codes и Communication check, не показывать весь email body | 4 |
+| 4 | Новая коммуникация после запуска | Message Generator и `AI Live`/`Demo fallback` | Кроп первого письма, provider badge и decision header | 4 или demo-only |
+| 5 | Дмитрий после ответа | Auto-close и архив будущих events | Timeline с `Ответ получен` и `Архивировано` | 5 |
+| 6 | Игорь, manual escalation | Граница автоматизации | Decision panel и status `Нужен личный контакт` | 5 |
+| 7 | Sensitive topic approval | Safety boundary | Только статус `Нужно подтверждение` и кнопка подтверждения | 5, резерв |
+| 8 | Campaigns или Analytics | Product surface beyond one case | Одна карточка кампании или 4–5 метрик; подпись synthetic/demo data | 6, резерв |
 
-- Ручной цикл распадается на письмо, reminder, inbox и cleanup.
-- ХьюманЛИ собирает его в один operations inbox.
+Практическое правило: один слайд — один основной скриншот. Архитектура на Slide 6 должна быть схемой, а не скриншотом кода.
 
-Визуал: screenshot Communication Inbox. Голосом: «Первое обещание — HR открывает один экран и сразу понимает, где требуется действие».
+## Architecture talking points
 
-### 2. Memory делает коммуникацию персональной
+### Почему local-first/static-first
 
-- История превращается в рабочий context, а не в surveillance profile.
-- Для Дмитрия память подсказывает короткий тон и утреннее окно.
+MVP запускается быстро, хранит demo state в браузере и остаётся offline-ready. Это снижает число точек отказа во время защиты и позволяет жюри увидеть domain workflow, а не инфраструктурный setup.
 
-Визуал: карточка Communication Profile. Голосом: «Система помнит способ коммуникации, который уже работает».
+### Почему без backend и БД
 
-### 3. Решение отделено от генерации
+Текущий MVP использует synthetic profiles и simulated delivery; для доказательства workflow server-side storage не нужен. Backend добавится вместе с реальными permissions, audit trail и каналами, а не как декоративный слой.
 
-- Decision Engine выбирает action, time, channel и escalation.
-- LLM формирует только wording.
+### Где граница MVP
 
-Визуал: Decision panel с `Почему так?`. Голосом: «Модель может писать естественно, но не принимает скрытые бизнес-решения».
+Уже есть Inbox, Decision Engine, derived Communication Memory, policies, guard, fallback, response simulation, Campaigns и Analytics. Нет real email delivery, calendar sync, auth/RBAC, multi-tenant storage и production compliance — и это нужно проговаривать прямо.
 
-### 4. Safety before send
+### Как масштабировать
 
-- Communication Check проверяет тон, длину, повторы, частоту и время.
-- Sensitive topics требуют подтверждения HR.
+Сохранить domain separation, заменить localStorage на API/DB и добавить delivery adapters, auth, permissions, audit, opt-out и observability. Message Generator и DemoProvider остаются провайдерами одного контракта.
 
-Визуал: guard checklist + approval state. Голосом: «Безопасность — слой workflow, а не обещание модели».
+### Одна фраза про pipeline
 
-### 5. Автоматизация знает границы
+«Context и policy приходят в Decision Engine; он выбирает действие и timing, Message Generator формулирует текст, Communication Guard проверяет его, а результатом становится send, approval или human escalation».
 
-- Ответ архивирует будущие шаги.
-- Repeated non-response ведёт к личному контакту.
+## Business value
 
-Визуал: Дмитрий responded и Игорь needs manual contact. Голосом: «Автоматизация продолжает только пока она уместна».
+- меньше ручного контроля и потерянных follow-up;
+- более последовательный tone of voice;
+- меньше риска неуместного времени или повторного давления;
+- понятная точка human escalation;
+- единый workspace для коммуникационных кейсов.
 
-### 6. Маленький законченный workspace
+Demo Analytics считает response rate, среднее время ответа, follow-up, escalation rate, tone и send window из локальных synthetic workflows. Это демонстрационные derived metrics, не production benchmark.
 
-- Campaigns и Analytics добавляют рабочий контур без BI и backend.
-- Static-first, localStorage, Live AI optional, Demo fallback всегда готов.
+## 12 вопросов жюри
 
-Визуал: architecture diagram + Campaign/Analytics screenshots. Голосом: «Мы добавили продуктовую глубину, не превращая hackathon MVP в enterprise-систему».
+1. **Где здесь настоящий AI?**
+   Live path отправляет контекст через локальный proxy в OpenRouter/Qwen и получает структурированный текст письма. Если provider недоступен, DemoProvider возвращает deterministic fallback с тем же контрактом.
 
-## Почему такая архитектура
+2. **Что происходит без сети или ключа?**
+   Можно открыть `index.html` напрямую: state, rules, simulated time, response flow и DemoProvider работают локально. Реальная доставка при этом не происходит — это честная граница MVP.
 
-Local-first сохраняет мгновенный запуск и offline fallback. Backend/БД не нужны для одного HR workspace с synthetic data и simulated delivery; большой backend добавил бы точки отказа. Минимальный proxy нужен только для безопасного вызова OpenRouter. Production масштабирование — API/DB, permissions, audit trail и channel adapters.
+3. **Почему AI не принимает HR-решения?**
+   Timing, policy, escalation и sensitive-topic approval должны быть воспроизводимыми и объяснимыми. Поэтому LLM отвечает только за формулировку уже выбранного действия.
 
-Decision Engine детерминирован и воспроизводим. Memory и metrics derived из local state. LLM не выбирает время, канал или escalation — он отвечает только за текст.
+4. **Как вы защищаетесь от spam?**
+   Есть рабочие часы, quiet hours, перенос выходных, ограниченный follow-up и переход к human contact после repeated non-response. Communication Check дополнительно смотрит на повторы, частоту и допустимое время.
 
-## Вопросы жюри
+5. **Что происходит с чувствительными темами?**
+   Компенсация, performance, увольнение, конфликт и дисциплинарные темы переводятся в approval-required state. ХьюманЛИ готовит текст, но не отправляет его без подтверждения HR.
 
-1. **Это настоящий AI?** Live AI использует OpenRouter/Qwen; при любой проблеме работает DemoProvider.
-2. **Почему не реальная почта?** MVP доказывает workflow и качество коммуникации; transport — следующий adapter.
-3. **Почему Decision Engine не LLM?** Timing, safety и escalation должны быть воспроизводимыми.
-4. **Как память влияет на продукт?** Она меняет guidance для tone, prompt context и human explanation.
-5. **Как защищаете от spam?** Quiet hours, weekend skip, лимит follow-up и human escalation.
-6. **Что с sensitive topics?** Compensation, performance, увольнение, конфликт и дисциплина требуют approval HR.
-7. **Что делает Communication Check?** Проверяет длину, pressure words, повторы, частоту и допустимое время.
-8. **Campaigns — это bulk infrastructure?** Нет, это локальная связь request IDs для демонстрации одного HR-запуска на нескольких людях.
-9. **Где хранятся данные?** В localStorage, synthetic profiles; production потребует server-side storage и permissions.
-10. **Как масштабировать?** Заменить storage и channel adapters за текущими domain interfaces, добавить auth, audit и delivery status.
+6. **Что с персональными данными?**
+   В demo используются synthetic employee profiles, а API key читается только локальным proxy из `.env` и не попадает во frontend. Production потребует server-side storage, permissions, retention rules и audit; MVP не заявляет compliance.
 
-## Checklist перед защитой
+7. **Как масштабировать продукт?**
+   Заменить localStorage на API/БД, подключить реальные channel adapters, auth/RBAC, audit и delivery statuses. Decision Engine, Memory и Message Generator уже разделены по ответственности.
 
-- [ ] Открыть свежую вкладку ХьюманЛИ и проверить seed.
-- [ ] Для Live AI заранее запустить `node server.js`; `.env` жюри не показывать.
-- [ ] Проверить inbox summary, Дмитрия, Decision panel и Игоря.
-- [ ] Один раз пройти `Inbox → Memory → Почему так? → Launch → +3д → +1д → +1д → Respond`.
-- [ ] Закрыть DevTools и лишние вкладки.
-- [ ] Если сеть нестабильна, открыть `index.html`: DemoProvider покрывает тот же flow.
-- [ ] Не обещать real delivery, enterprise security или compliance.
+8. **Почему не сделали реальную email/calendar интеграцию?**
+   Защита проверяет главный продуктовый риск — уместный коммуникационный цикл, а не OAuth и доставку. Реальные Email, Teams, Slack и calendar — следующий adapter layer после подтверждения core workflow.
+
+9. **Почему local-first?**
+   Это быстрый и надёжный способ показать законченный MVP без зависимости от backend setup и сети. Одновременно архитектурные границы оставляют понятный путь к production storage.
+
+10. **Где будет храниться Memory в production?**
+    В server-side communication profile с доступом по ролям, retention policy и audit trail. В текущем MVP memory derived из local state, чтобы не добавлять отдельную базу данных.
+
+11. **Как измерить эффект?**
+    Сравнивать response rate, time-to-response, долю ответов без follow-up, follow-up rate, escalation rate, opt-out и ручное время HR до/после запуска. Текущие числа в Analytics — только synthetic demo data.
+
+12. **Как предотвратить неуместный AI-текст?**
+    Контекст и safety rules ограничивают генерацию, prompt запрещает давление и манипуляции, а deterministic Communication Check ловит длину, тон, повторы и время. Для review/recommendation mode HR может подтверждать действие вручную; это снижает риск, но не заменяет человеческую ответственность.
+
+## Что не показывать без вопроса
+
+- `.env`, API key и экран OpenRouter keys;
+- исходный код, DevTools, console и технические logs;
+- raw localStorage и внутреннюю структуру state;
+- длинные prompt preview и системные инструкции;
+- synthetic email addresses и лишние персональные поля;
+- подробную настройку automation policy в основном demo;
+- Campaigns и Analytics, если основной flow уже занял две минуты.
+
+## Что можно показать только по вопросу
+
+- Prompt preview — чтобы объяснить context contract, но не читать prompt целиком;
+- settings с `autopilot`, `review`, `recommendation`;
+- Mermaid architecture и `server.js` proxy;
+- Data model и localStorage migration;
+- OpenRouter/Qwen и fallback provider;
+- Campaigns/Analytics как дополнительные поверхности MVP.
+
+## Финальный checklist
+
+- [ ] Открыта свежая вкладка, seed восстановлен.
+- [ ] Sidebar не скроллится, центральная область прокручивается отдельно.
+- [ ] Проверены Inbox, Дмитрий, `Почему так?`, запуск, follow-up, response и Игорь.
+- [ ] Live AI либо заранее запущен, либо осознанно выбран Demo fallback.
+- [ ] DevTools, `.env`, ключи и лишние вкладки закрыты.
+- [ ] На слайдах нет обещаний real delivery, enterprise security или compliance.
+- [ ] Для финала оставлена фраза: «Мы автоматизируем коммуникационный цикл, но не автоматизируем человеческую ответственность».

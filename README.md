@@ -46,4 +46,4 @@ node server.js
 
 В проекте намеренно нет реальной отправки email, Google/Outlook OAuth, backend database, authentication, multi-tenant setup, enterprise RBAC или production compliance. Следующий production-слой — server-side storage, permissions, audit trail и channel adapters.
 
-Документация: [`PRODUCT.md`](./docs/PRODUCT.md), [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md), [`DATA_MODEL.md`](./docs/DATA_MODEL.md), [`DECISIONS.md`](./docs/DECISIONS.md), [`DEMO.md`](./docs/DEMO.md), [`PITCH.md`](./docs/PITCH.md), [`DEFENSE.md`](./docs/DEFENSE.md).
+Документация: [`PRODUCT.md`](./docs/PRODUCT.md), [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md), [`DATA_MODEL.md`](./docs/DATA_MODEL.md), [`DECISIONS.md`](./docs/DECISIONS.md), [`DEMO.md`](./docs/DEMO.md), [`PITCH.md`](./docs/PITCH.md), [`SLIDES.md`](./docs/SLIDES.md), [`DEFENSE.md`](./docs/DEFENSE.md).

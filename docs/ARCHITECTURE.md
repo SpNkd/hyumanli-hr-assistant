@@ -2,6 +2,27 @@
 
 ХьюманЛИ — static-first/local-first workspace с optional local proxy для Live AI. UI и domain state остаются в браузере; LLM отвечает только за wording, а решение о действии принимает deterministic Decision Engine.
 
+## Jury view · схема, читаемая за 10 секунд
+
+Это версия для Slide 6. Она показывает границы MVP и не перегружает жюри внутренними деталями.
+
+```mermaid
+flowchart TD
+  HR[HR] --> Workspace[Workspace]
+  Workspace --> Decision[Decision Engine]
+  Decision --> Context[Context / Memory / Policy]
+  Context --> Generator[Message Generator]
+  Generator --> Guard[Communication Guard]
+  Guard --> Channel[Channel / Demo]
+  Channel --> Result[Send / Approval / Human]
+  Generator -. Live AI .-> Live[OpenRouter / Qwen]
+  Generator -. offline fallback .-> Demo[DemoProvider]
+```
+
+Как проговаривать: «Workspace даёт контекст, Decision Engine выбирает действие, Message Generator отвечает за язык, Guard проверяет уместность, а результатом становится отправка, подтверждение или передача человеку. Live AI можно заменить на DemoProvider без изменения workflow».
+
+## Engineering view
+
 ```mermaid
 flowchart TD
   HR[HR Workspace] --> Case[Communication Case]
