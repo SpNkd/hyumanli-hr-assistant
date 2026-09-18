@@ -217,6 +217,7 @@ Analytics показывает derived metrics из локальных synthetic
 - [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — компоненты, разделение ответственности и путь к масштабированию;
 - [`DATA_MODEL.md`](./docs/DATA_MODEL.md) — основные сущности и состояния;
 - [`DEMO.md`](./docs/DEMO.md) — сценарий демонстрации;
+- [`DEPLOYMENTS.md`](./docs/DEPLOYMENTS.md) — публичные deployment URLs, smoke checks и rollback note;
 - [`PITCH.md`](./docs/PITCH.md) — короткий pitch и product story;
 - [`presentation/README.md`](./presentation/README.md) — материалы защиты;
 - [`DEFENSE.md`](./docs/DEFENSE.md) — расширенный hackathon defense guide.
